@@ -40,13 +40,13 @@ namespace nss2csharp.Output
             return 1;
         }
 
-        public static string GetTypeAsString(Type type, bool nullable = true)
+        public static string GetTypeAsString(Type type, string pluginName = null)
         {
             if (type.GetType() == typeof(VoidType))              return "void";
             else if (type.GetType() == typeof(IntType))          return "int";
             else if (type.GetType() == typeof(FloatType))        return "float";
             else if (type.GetType() == typeof(StringType))       return "string";
-            else if (type.GetType() == typeof(StructType))       return ((StructType)type).m_TypeName;
+            else if (type.GetType() == typeof(StructType))       return pluginName == null ? ((StructType) type).m_TypeName : ((StructType) type).m_TypeName.Replace($"{pluginName}_", "").Replace("NWNX_", "");
             else if (type.GetType() == typeof(ObjectType))       return "uint";
             else if (type.GetType() == typeof(LocationType))     return "NWN.Location";
             else if (type.GetType() == typeof(VectorType))       return "NWN.Vector";
@@ -97,20 +97,28 @@ namespace nss2csharp.Output
             return null;
         }
 
+        public static string GetStackPushFormat(Type type)
+        {
+            if (type.GetType() == typeof(IntType)) return "NWN.Internal.NativeFunctions.StackPushInteger({0})";
+            else if (type.GetType() == typeof(FloatType)) return "NWN.Internal.NativeFunctions.StackPushFloat({0})";
+            else if (type.GetType() == typeof(StringType)) return "NWN.Internal.NativeFunctions.StackPushString({0})";
+            else if (type.GetType() == typeof(ObjectType)) return "NWN.Internal.NativeFunctions.StackPushObject({0})";
+            else if (type.GetType() == typeof(LocationType)) return "NWN.Internal.NativeFunctions.StackPushLocation({0}.Handle)";
+            else if (type.GetType() == typeof(VectorType)) return "NWN.Internal.NativeFunctions.StackPushVector({0})";
+            else if (type.GetType() == typeof(ItemPropertyType)) return "NWN.Internal.NativeFunctions.StackPushItemProperty({0}.Handle)";
+            else if (type.GetType() == typeof(EffectType)) return "NWN.Internal.NativeFunctions.StackPushEffect({0}.Handle)";
+            else if (type.GetType() == typeof(TalentType)) return "NWN.Internal.NativeFunctions.StackPushTalent({0}.Handle)";
+            else if (type.GetType() == typeof(EventType)) return "NWN.Internal.NativeFunctions.StackPushEvent({0}.Handle)";
+            else
+            {
+                return null;
+            }
+        }
+
         public static string GetStackPush(Type type, Value val, bool isPlugin)
         {
-            if (type.GetType() == typeof(IntType)) return string.Format("NWN.Internal.NativeFunctions.StackPushInteger({0})", GetValueAsString(val, isPlugin));
-            else if (type.GetType() == typeof(FloatType)) return string.Format("NWN.Internal.NativeFunctions.StackPushFloat({0})", GetValueAsString(val, isPlugin));
-            else if (type.GetType() == typeof(StringType)) return string.Format("NWN.Internal.NativeFunctions.StackPushString({0})", GetValueAsString(val, isPlugin));
-            else if (type.GetType() == typeof(ObjectType)) return string.Format("NWN.Internal.NativeFunctions.StackPushObject({0})", GetValueAsString(val, isPlugin));
-            else if (type.GetType() == typeof(LocationType)) return string.Format("NWN.Internal.NativeFunctions.StackPushLocation({0}.Handle)", GetValueAsString(val, isPlugin));
-            else if (type.GetType() == typeof(VectorType)) return string.Format("NWN.Internal.NativeFunctions.StackPushVector({0}.Handle)", GetValueAsString(val, isPlugin));
-            else if (type.GetType() == typeof(ItemPropertyType)) return string.Format("NWN.Internal.NativeFunctions.StackPushItemProperty({0}.Handle)", GetValueAsString(val, isPlugin));
-            else if (type.GetType() == typeof(EffectType)) return string.Format("NWN.Internal.NativeFunctions.StackPushEffect({0}.Handle)", GetValueAsString(val, isPlugin));
-            else if (type.GetType() == typeof(TalentType)) return string.Format("NWN.Internal.NativeFunctions.StackPushTalent({0}.Handle)", GetValueAsString(val, isPlugin));
-            else if (type.GetType() == typeof(EventType)) return string.Format("NWN.Internal.NativeFunctions.StackPushEvent({0}.Handle)", GetValueAsString(val, isPlugin));
-
-            return null;
+            string format = GetStackPushFormat(type);
+            return format != null ? string.Format(format, GetValueAsString(val, isPlugin)) : null;
         }
 
         public static string GetStackPop(Type type)
