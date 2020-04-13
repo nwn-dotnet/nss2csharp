@@ -109,7 +109,7 @@ namespace nss2csharp.Output
                                 return -1;
                             }
 
-                            for (int j = paramStruct.m_Members.Count - 1; j >= 0; j--)
+                            for (int j = 0; j < paramStruct.m_Members.Count; j++)
                             {
                                 LvalueDeclSingle structDec = paramStruct.m_Members[j] as LvalueDeclSingle;
                                 if (structDec == null)
