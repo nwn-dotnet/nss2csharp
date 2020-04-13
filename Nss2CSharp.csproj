@@ -1,0 +1,75 @@
+﻿<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProjectGuid>{B85CCEC7-CBCB-4E32-B003-5317EEB90AE7}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <NoStandardLibraries>false</NoStandardLibraries>
+    <AssemblyName>nss2csharp</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>Nss2CSharp</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Language\ILanguage.cs" />
+    <Compile Include="Language\Language_Nss.cs" />
+    <Compile Include="Lexer\Lexer_Nss.cs" />
+    <Compile Include="Output\Output.cs" />
+    <Compile Include="Output\Output_CSharp.cs" />
+    <Compile Include="Output\Output_CSharp_NWNX.cs" />
+    <Compile Include="Output\Output_CSharp_NwscriptNss.cs" />
+    <Compile Include="Output\Output_Nss.cs" />
+    <Compile Include="Parser\Parser_Nss.cs" />
+    <Compile Include="Parser\Parser_Nss_Types_Basic.cs" />
+    <Compile Include="Parser\Parser_Nss_Types_Complex.cs" />
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".idea\.idea.nss2csharp.dir\.idea\.gitignore" />
+    <None Include=".idea\.idea.nss2csharp.dir\riderModule.iml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include=".idea\.idea.nss2csharp.dir\.idea\contentModel.xml" />
+    <Content Include=".idea\.idea.nss2csharp.dir\.idea\indexLayout.xml" />
+    <Content Include=".idea\.idea.nss2csharp.dir\.idea\misc.xml" />
+    <Content Include=".idea\.idea.nss2csharp.dir\.idea\modules.xml" />
+    <Content Include=".idea\.idea.nss2csharp.dir\.idea\projectSettingsUpdater.xml" />
+    <Content Include=".idea\.idea.nss2csharp.dir\.idea\vcs.xml" />
+    <Content Include=".idea\.idea.nss2csharp.dir\.idea\workspace.xml" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
+  <ProjectExtensions>
+    <VisualStudio AllowExistingFolder="true" />
+  </ProjectExtensions>
+</Project>

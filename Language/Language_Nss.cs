@@ -42,8 +42,6 @@ namespace nss2csharp.Language
         Talent,
         Action,
         Event,
-        ObjectInvalid,
-        ObjectSelf,
         Default
     }
 
@@ -87,8 +85,6 @@ namespace nss2csharp.Language
             { "talent",         NssKeywords.Talent },
             { "action",         NssKeywords.Action },
             { "event",          NssKeywords.Event },
-            { "OBJECT_INVALID", NssKeywords.ObjectInvalid },
-            { "OBJECT_SELF",    NssKeywords.ObjectSelf },
             { "default",        NssKeywords.Default },
         };
 

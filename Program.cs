@@ -137,14 +137,14 @@ namespace nss2csharp
 
                         Console.WriteLine("Running output. [+{0}ms]", timer.ElapsedMilliseconds);
                         Output_CSharp output = new Output_CSharp();
-                        err = output.GetFromCU(parser.CompilationUnit, out string outputStr);
+                        err = output.GetFromCU(parser.CompilationUnit, out string outputStr, out string className);
                         if (err != 0)
                         {
                             Console.Error.WriteLine("Failed due to error {0}", err);
                             break;
                         }
 
-                        File.WriteAllText(Path.ChangeExtension(script, ".cs"), outputStr);
+                        File.WriteAllText(Path.ChangeExtension(className, ".cs"), outputStr);
                     }
                     while (false);
 
