@@ -117,12 +117,18 @@ namespace nss2csharp.Output
                                     continue;
                                 }
 
-                                stringBuilder.AppendLine($"      {string.Format(Output_CSharp.GetStackPushFormat(structDec.m_Type), $"{param.m_Lvalue.m_Identifier}.{structDec.m_Lvalue.m_Identifier}")};");
+                                stringBuilder.AppendLine($"      {string.Format(Output_CSharp.GetNWNXStackPushFormat(structDec.m_Type.GetType()), $"{param.m_Lvalue.m_Identifier}.{structDec.m_Lvalue.m_Identifier}")};");
                             }
+                        }
+                        else if (param.m_Type is VectorType vectorType)
+                        {
+                            stringBuilder.AppendLine($"      {string.Format(Output_CSharp.GetNWNXStackPushFormat(typeof(FloatType)), $"{param.m_Lvalue.m_Identifier}.z")};");
+                            stringBuilder.AppendLine($"      {string.Format(Output_CSharp.GetNWNXStackPushFormat(typeof(FloatType)), $"{param.m_Lvalue.m_Identifier}.y")};");
+                            stringBuilder.AppendLine($"      {string.Format(Output_CSharp.GetNWNXStackPushFormat(typeof(FloatType)), $"{param.m_Lvalue.m_Identifier}.x")};");
                         }
                         else
                         {
-                            stringBuilder.AppendLine("      " + Output_CSharp.GetStackPush(param.m_Type, param.m_Lvalue, false) + ";");
+                            stringBuilder.AppendLine("      " + Output_CSharp.GetStackPush(param.m_Type, param.m_Lvalue, true) + ";");
                         }
                     }
 
@@ -147,7 +153,7 @@ namespace nss2csharp.Output
                             }
 
                             string structMemName = dec.m_Lvalue.m_Identifier;
-                            stringBuilder.AppendLine($"      retVal.{structMemName} = {Output_CSharp.GetStackPop(dec.m_Type)};");
+                            stringBuilder.AppendLine($"      retVal.{structMemName} = {Output_CSharp.GetNWNXStackPop(dec.m_Type)};");
                         }
 
                         stringBuilder.AppendLine("      return retVal;");
@@ -155,7 +161,7 @@ namespace nss2csharp.Output
 
                     else if (funcDecl.m_ReturnType.GetType() != typeof(VoidType))
                     {
-                        stringBuilder.AppendLine("      return " + Output_CSharp.GetStackPop(funcDecl.m_ReturnType) + ";");
+                        stringBuilder.AppendLine("      return " + Output_CSharp.GetNWNXStackPop(funcDecl.m_ReturnType) + ";");
                     }
 
                     stringBuilder.AppendLine("    }");

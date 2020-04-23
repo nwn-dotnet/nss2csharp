@@ -97,6 +97,20 @@ namespace nss2csharp.Output
             return null;
         }
 
+        public static string GetNWNXStackPushFormat(System.Type type)
+        {
+            if (type == typeof(IntType)) return "NWN.Internal.NativeFunctions.nwnxPushInt({0})";
+            else if (type == typeof(FloatType)) return "NWN.Internal.NativeFunctions.nwnxPushFloat({0})";
+            else if (type == typeof(StringType)) return "NWN.Internal.NativeFunctions.nwnxPushString({0})";
+            else if (type == typeof(ObjectType)) return "NWN.Internal.NativeFunctions.nwnxPushObject({0})";
+            else if (type == typeof(ItemPropertyType)) return "NWN.Internal.NativeFunctions.nwnxPushItemProperty({0}.Handle)";
+            else if (type == typeof(EffectType)) return "NWN.Internal.NativeFunctions.nwnxPushEffect({0}.Handle)";
+            else
+            {
+                return null;
+            }
+        }
+
         public static string GetStackPushFormat(Type type)
         {
             if (type.GetType() == typeof(IntType)) return "NWN.Internal.NativeFunctions.StackPushInteger({0})";
@@ -115,10 +129,10 @@ namespace nss2csharp.Output
             }
         }
 
-        public static string GetStackPush(Type type, Value val, bool isPlugin)
+        public static string GetStackPush(Type type, Value val, bool isNWNX)
         {
-            string format = GetStackPushFormat(type);
-            return format != null ? string.Format(format, GetValueAsString(val, isPlugin)) : null;
+            string format = isNWNX ? GetNWNXStackPushFormat(type.GetType()) : GetStackPushFormat(type);
+            return format != null ? string.Format(format, GetValueAsString(val, false)) : null;
         }
 
         public static string GetStackPop(Type type)
@@ -140,6 +154,19 @@ namespace nss2csharp.Output
         public static string GetInternalCall(int id)
         {
             return string.Format("NWN.Internal.NativeFunctions.CallBuiltIn({0})", id);
+        }
+
+        public static string GetNWNXStackPop(Type type)
+        {
+            if (type.GetType() == typeof(IntType)) return "NWN.Internal.NativeFunctions.nwnxPopInt()";
+            else if (type.GetType() == typeof(FloatType)) return "NWN.Internal.NativeFunctions.nwnxPopFloat()";
+            else if (type.GetType() == typeof(StringType)) return "NWN.Internal.NativeFunctions.nwnxPopString()";
+            else if (type.GetType() == typeof(ObjectType)) return "NWN.Internal.NativeFunctions.nwnxPopObject()";
+            else if (type.GetType() == typeof(VectorType)) return "new NWN.Vector(NWN.Internal.NativeFunctions.nwnxPopFloat(), NWN.Internal.NativeFunctions.nwnxPopFloat(), NWN.Internal.NativeFunctions.nwnxPopFloat())";
+            else if (type.GetType() == typeof(ItemPropertyType)) return "new NWN.ItemProperty(NWN.Internal.NativeFunctions.nwnxPopItemProperty())";
+            else if (type.GetType() == typeof(EffectType)) return "new NWN.Effect(NWN.Internal.NativeFunctions.nwnxPopEffect())";
+
+            return null;
         }
 
         public static string GetNWNXSetFunction(string pluginNameVar, string methodName)
