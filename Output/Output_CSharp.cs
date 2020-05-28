@@ -9,6 +9,18 @@ namespace nss2csharp.Output
     class Output_CSharp : IOutput
     {
         private static CodeDomProvider CodeDomProvider = CodeDomProvider.CreateProvider("C#");
+        public const string Indent = "    ";
+
+        public static string GetIndent(int depth)
+        {
+            string retVal = "";
+            for (int i = 0; i < depth; i++)
+            {
+                retVal += Indent;
+            }
+
+            return retVal;
+        }
 
         public int GetFromTokens(IEnumerable<IToken> tokens, out string data)
         {
