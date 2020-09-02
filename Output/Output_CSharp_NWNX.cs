@@ -11,7 +11,7 @@ namespace nss2csharp.Output
         public int GetFromCU(CompilationUnit cu, string className, out string data)
         {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine("namespace NWNX");
+            stringBuilder.AppendLine("namespace NWN.Core.NWNX");
             stringBuilder.AppendLine("{");
 
             int attributePos = stringBuilder.Length;
@@ -26,7 +26,19 @@ namespace nss2csharp.Output
                 Node node = cu.m_Nodes[index];
                 if (node is LineComment lineComment)
                 {
-                    stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}// " + lineComment.m_Comment);
+                    if (lineComment.m_Comment.Contains("@param"))
+                    {
+                        string paramName = lineComment.m_Comment.Split(' ')[2];
+                        stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//{lineComment.m_Comment.Replace($"@param {paramName} ", $"<param name=\"{paramName}\">")}</param>");
+                    }
+                    else if (lineComment.m_Comment.Contains("@return"))
+                    {
+                        stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//{lineComment.m_Comment.Replace("@return ", $"<returns>")}</returns>");
+                    }
+                    else
+                    {
+                        stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//" + lineComment.m_Comment.Replace("@brief ", ""));
+                    }
                 }
 
                 if (node is BlockComment blockComment)
@@ -119,19 +131,13 @@ namespace nss2csharp.Output
                                 stringBuilder.AppendLine($"{Output_CSharp.GetIndent(3)}{string.Format(Output_CSharp.GetNWNXStackPushFormat(structDec.m_Type.GetType()), $"{param.m_Lvalue.m_Identifier}.{structDec.m_Lvalue.m_Identifier}")};");
                             }
                         }
-                        else if (param.m_Type is VectorType vectorType)
-                        {
-                            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(3)}{string.Format(Output_CSharp.GetNWNXStackPushFormat(typeof(FloatType)), $"{param.m_Lvalue.m_Identifier}.z")};");
-                            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(3)}{string.Format(Output_CSharp.GetNWNXStackPushFormat(typeof(FloatType)), $"{param.m_Lvalue.m_Identifier}.y")};");
-                            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(3)}{string.Format(Output_CSharp.GetNWNXStackPushFormat(typeof(FloatType)), $"{param.m_Lvalue.m_Identifier}.x")};");
-                        }
                         else
                         {
                             stringBuilder.AppendLine($"{Output_CSharp.GetIndent(3)}" + Output_CSharp.GetStackPush(param.m_Type, param.m_Lvalue, true) + ";");
                         }
                     }
 
-                    stringBuilder.AppendLine($"{Output_CSharp.GetIndent(3)}NWN.Internal.NativeFunctions.nwnxCallFunction();");
+                    stringBuilder.AppendLine($"{Output_CSharp.GetIndent(3)}VM.NWNX.Call();");
 
                     if (funcDecl.m_ReturnType is StructType retStructType)
                     {
@@ -174,20 +180,20 @@ namespace nss2csharp.Output
             foreach (StructDeclaration structDeclaration in cu.m_Nodes.OfType<StructDeclaration>())
             {
                 stringBuilder.AppendLine();
-                stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}public struct {GetStructDecName(structDeclaration.m_Name.m_Identifier, pluginNameVar)}");
-                stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}{{");
+                stringBuilder.AppendLine($"{Output_CSharp.GetIndent(1)}public struct {GetStructDecName(structDeclaration.m_Name.m_Identifier, pluginNameVar)}");
+                stringBuilder.AppendLine($"{Output_CSharp.GetIndent(1)}{{");
 
                 foreach (LvalueDeclSingle dec in structDeclaration.m_Members.OfType<LvalueDeclSingle>())
                 {
                     string type = Output_CSharp.GetTypeAsString(dec.m_Type, pluginNameVar);
                     string name = dec.m_Lvalue.m_Identifier;
-                    stringBuilder.AppendLine($"{Output_CSharp.GetIndent(3)}public {type} {name};");
+                    stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}public {type} {name};");
                 }
 
-                stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}}}");
+                stringBuilder.AppendLine($"{Output_CSharp.GetIndent(1)}}}");
             }
 
-            stringBuilder.AppendLine("}");
+            stringBuilder.Append("}");
 
             if (pluginNameVar == null)
             {
