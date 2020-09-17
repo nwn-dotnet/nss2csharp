@@ -1,6 +1,6 @@
 using NWScript.Lexer;
 
-namespace NWScript.Language.Tokens
+namespace NWScript.Language
 {
   public class IdentifierToken : ILanguageToken
   {

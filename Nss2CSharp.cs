@@ -2,13 +2,12 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using NWScript.Language.Tokens;
+using NWScript.Language;
 using NWScript.Output;
-using NWScript.Parser;
 
 namespace NWScript
 {
-  public sealed class Program
+  public static class Nss2CSharp
   {
     private static Stopwatch timer = new Stopwatch();
 
@@ -127,7 +126,7 @@ namespace NWScript
 #endif
 
       Console.WriteLine("Running parser. [+{0}ms]", timer.ElapsedMilliseconds);
-      Parser_Nss parser = new Parser_Nss();
+      Parser.Parser parser = new Parser.Parser();
       error = parser.Parse(Path.GetFileName(script), scriptLines, lexer.Tokens);
       if (error != 0)
       {

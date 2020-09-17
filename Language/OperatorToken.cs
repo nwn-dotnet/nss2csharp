@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using NWScript.Lexer;
 
-namespace NWScript.Language.Tokens
+namespace NWScript.Language
 {
   public class OperatorToken : ILanguageToken
   {
@@ -22,20 +22,20 @@ namespace NWScript.Language.Tokens
 
     public static Dictionary<char, NssOperators> Map = new Dictionary<char, NssOperators>
     {
-      { '+',  NssOperators.Addition },
-      { '-',  NssOperators.Subtraction },
-      { '/',  NssOperators.Division },
-      { '*',  NssOperators.Multiplication },
-      { '%',  NssOperators.Modulo },
-      { '&',  NssOperators.And },
-      { '|',  NssOperators.Or },
-      { '!',  NssOperators.Not },
-      { '~',  NssOperators.Inversion },
-      { '>',  NssOperators.GreaterThan },
-      { '<',  NssOperators.LessThan },
-      { '=',  NssOperators.Equals },
-      { '?',  NssOperators.TernaryQuestionMark },
-      { ':',  NssOperators.TernaryColon },
+      {'+', NssOperators.Addition},
+      {'-', NssOperators.Subtraction},
+      {'/', NssOperators.Division},
+      {'*', NssOperators.Multiplication},
+      {'%', NssOperators.Modulo},
+      {'&', NssOperators.And},
+      {'|', NssOperators.Or},
+      {'!', NssOperators.Not},
+      {'~', NssOperators.Inversion},
+      {'>', NssOperators.GreaterThan},
+      {'<', NssOperators.LessThan},
+      {'=', NssOperators.Equals},
+      {'?', NssOperators.TernaryQuestionMark},
+      {':', NssOperators.TernaryColon},
     };
 
     public NssOperators m_Operator;

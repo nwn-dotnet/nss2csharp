@@ -1,6 +1,6 @@
 using NWScript.Lexer;
 
-namespace NWScript.Language.Tokens
+namespace NWScript.Language
 {
   public class LiteralToken : ILanguageToken
   {
@@ -8,11 +8,11 @@ namespace NWScript.Language.Tokens
 
     public override string ToString()
     {
-      return m_Literal;
+      return Literal;
     }
 
-    public NssLiteralType m_LiteralType;
-    public string m_Literal;
+    public NssLiteralType LiteralType;
+    public string Literal;
   }
 
   public enum NssLiteralType
