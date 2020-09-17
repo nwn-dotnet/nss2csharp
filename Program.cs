@@ -1,160 +1,158 @@
-﻿using nss2csharp.Language;
-using nss2csharp.Lexer;
-using nss2csharp.Output;
-using nss2csharp.Parser;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using NWScript.Language.Tokens;
+using NWScript.Output;
+using NWScript.Parser;
 
-namespace nss2csharp
+namespace NWScript
 {
-    public class Program
+  public sealed class Program
+  {
+    private static Stopwatch timer = new Stopwatch();
+
+    private static string destDir;
+
+    public static void Main(string[] args)
     {
-        static void Main(string[] scriptsRawArr)
+      if (args.Length != 2)
+      {
+        Console.WriteLine("Usage: Nss2CSharp <source_dir> <dest_dir>");
+        return;
+      }
+
+      string sourceDir = args[0];
+      destDir = args[1];
+
+      string[] scripts = Directory.GetFiles(sourceDir, "*.nss", SearchOption.AllDirectories);
+
+      // Process each file
+      foreach (string script in scripts)
+      {
+        if (ProcessFile(script))
         {
-            List<string> scripts = scriptsRawArr.ToList();
+          Console.WriteLine("Processed in {0}ms\n", timer.ElapsedMilliseconds);
+        }
+      }
+    }
 
-            // Expand wildcards
-            for (int i = scripts.Count - 1; i >= 0; --i)
-            {
-                string script = scripts[i];
-                string directory = Path.GetDirectoryName(script);
-                string fileName = Path.GetFileName(script);
+    private static bool ProcessFile(string script)
+    {
+      if (!File.Exists(script))
+      {
+        Console.Error.WriteLine("Failed to read file {0}", script);
+        return false;
+      }
 
-                if (fileName.Contains("*"))
-                {
-                    scripts.RemoveAt(i);
-                    foreach (string expanded in Directory.GetFiles(directory, fileName))
-                    {
-                        scripts.Add(expanded);
-                    }
-                }
-            }
+      timer.Restart();
 
-            Stopwatch timer = new Stopwatch();
+      FileInfo fileInfo = new FileInfo(script);
+      if (fileInfo.Length == 0)
+      {
+        Console.WriteLine("Source file empty, skipping.");
+        return false;
+      }
 
-            // Process each file
-            foreach (string script in scripts)
-            {
-                if (File.Exists(script))
-                {
-                    timer.Restart();
+      string[] scriptLines = File.ReadAllLines(script);
+      string scriptData = scriptLines.Aggregate((a, b) => a + "\n" + b);
 
-                    do
-                    {
-                        Console.WriteLine("Loading {0}", script);
-                        string[] sourceFile = File.ReadAllLines(script);
+      Lexer.Lexer lexer = new Lexer.Lexer(scriptData);
 
-                        if (sourceFile.Length == 0)
-                        {
-                            Console.WriteLine("Source file empty, skipping.");
-                            break;
-                        }
+      Console.WriteLine("Running lexical analysis. [+{0}ms]", timer.ElapsedMilliseconds);
 
-                        Console.WriteLine("Running lexical analysis. [+{0}ms]", timer.ElapsedMilliseconds);
-                        Lexer_Nss analysis = new Lexer_Nss();
-                        int err = analysis.Analyse(sourceFile.Aggregate((a, b) => a + "\n" + b));
-                        if (err != 0)
-                        {
-                            Console.Error.WriteLine("Failed due to error {0}", err);
-                            break;
-                        }
+      int error = lexer.Analyse();
+      if (error != 0)
+      {
+        Console.Error.WriteLine("Failed due to error {0}", error);
+        return false;
+      }
 
 #if DEBUG
-                        {
-                            int preprocessors = analysis.Tokens.Count(token => token.GetType() == typeof(NssPreprocessor));
-                            int comments = analysis.Tokens.Count(token => token.GetType() == typeof(NssComment));
-                            int separators = analysis.Tokens.Count(token => token.GetType() == typeof(NssSeparator));
-                            int operators = analysis.Tokens.Count(token => token.GetType() == typeof(NssOperator));
-                            int literals = analysis.Tokens.Count(token => token.GetType() == typeof(NssLiteral));
-                            int keywords = analysis.Tokens.Count(token => token.GetType() == typeof(NssKeyword));
-                            int identifiers = analysis.Tokens.Count(token => token.GetType() == typeof(NssIdentifier));
+      {
+        int preprocessors = lexer.Tokens.Count(token => token.GetType() == typeof(PreprocessorToken));
+        int comments = lexer.Tokens.Count(token => token.GetType() == typeof(CommentToken));
+        int separators = lexer.Tokens.Count(token => token.GetType() == typeof(SeparatorToken));
+        int operators = lexer.Tokens.Count(token => token.GetType() == typeof(OperatorToken));
+        int literals = lexer.Tokens.Count(token => token.GetType() == typeof(LiteralToken));
+        int keywords = lexer.Tokens.Count(token => token.GetType() == typeof(KeywordToken));
+        int identifiers = lexer.Tokens.Count(token => token.GetType() == typeof(IdentifierToken));
 
-                            Console.WriteLine("DEBUG: Preprocessor: {0} Comments: {1} Separators: {2} " +
-                                "Operators: {3} Literals: {4} Keywords: {5} Identifiers: {6}",
-                                preprocessors, comments, separators, operators, literals, keywords, identifiers);
-                        }
+        Console.WriteLine("DEBUG: Preprocessor: {0} Comments: {1} Separators: {2} " +
+          "Operators: {3} Literals: {4} Keywords: {5} Identifiers: {6}",
+          preprocessors, comments, separators, operators, literals, keywords, identifiers);
+      }
 
-                        {
-                            Console.WriteLine("DEBUG: Converting tokens back to source and comparing.");
-                            Output_Nss debugOutput = new Output_Nss();
+      {
+        Console.WriteLine("DEBUG: Converting tokens back to source and comparing.");
+        Output_Nss debugOutput = new Output_Nss();
 
-                            err = debugOutput.GetFromTokens(analysis.Tokens, out string data);
-                            if (err != 0)
-                            {
-                                Console.Error.WriteLine("DEBUG: Failed due to error {0}", err);
-                                break;
-                            }
+        error = debugOutput.GetFromTokens(lexer.Tokens, out string data);
+        if (error != 0)
+        {
+          Console.Error.WriteLine("DEBUG: Failed due to error {0}", error);
+          return false;
+        }
 
-                            string[] reformattedData = data.Split('\n');
+        string[] reformattedData = data.Split('\n');
 
-                            int sourceLines = sourceFile.Count();
-                            int dataLines = reformattedData.Count();
+        int sourceLines = scriptLines.Count();
+        int dataLines = reformattedData.Count();
 
-                            if (sourceLines != dataLines)
-                            {
-                                Console.Error.WriteLine("DEBUG: Failed due to mismatch in line count. " +
-                                    "Source: {0}, Data: {1}", sourceLines, dataLines);
+        if (sourceLines != dataLines)
+        {
+          Console.Error.WriteLine("DEBUG: Failed due to mismatch in line count. " +
+            "Source: {0}, Data: {1}", sourceLines, dataLines);
 
-                                break;
-                            }
+          return false;
+        }
 
-                            for (int i = 0; i < sourceFile.Length; ++i)
-                            {
-                                string sourceLine = sourceFile[i];
-                                string dataLine = reformattedData[i];
+        for (int i = 0; i < scriptLines.Length; ++i)
+        {
+          string sourceLine = scriptLines[i];
+          string dataLine = reformattedData[i];
 
-                                if (sourceLine != dataLine)
-                                {
-                                    Console.Error.WriteLine("DEBUG: Failed due to mismatch in line contents. " +
-                                        "Line {0}.\n" +
-                                        "Source line len: {1}\nData line len:   {2}\n" +
-                                        "Source line: {3}\nData line:   {4}",
-                                        i, sourceLine.Length, dataLine.Length, sourceLine, dataLine);
+          if (sourceLine != dataLine)
+          {
+            Console.Error.WriteLine("DEBUG: Failed due to mismatch in line contents. " +
+              "Line {0}.\n" +
+              "Source line len: {1}\nData line len:   {2}\n" +
+              "Source line: {3}\nData line:   {4}",
+              i, sourceLine.Length, dataLine.Length, sourceLine, dataLine);
 
-                                    break;
-                                }
-                            }
-
-                        }
+            break;
+          }
+        }
+      }
 #endif
 
-                        Console.WriteLine("Running parser. [+{0}ms]", timer.ElapsedMilliseconds);
-                        Parser_Nss parser = new Parser_Nss();
-                        err = parser.Parse(Path.GetFileName(script), sourceFile, analysis.Tokens);
-                        if (err != 0)
-                        {
-                            Console.Error.WriteLine("Failed due to error {0}", err);
-                            foreach (string errStr in parser.Errors)
-                            {
-                                Console.Error.WriteLine("  {0}", errStr);
-                            }
-
-                            break;
-                        }
-
-                        Console.WriteLine("Running output. [+{0}ms]", timer.ElapsedMilliseconds);
-                        Output_CSharp output = new Output_CSharp();
-                        err = output.GetFromCU(parser.CompilationUnit, out string outputStr, out string className);
-                        if (err != 0)
-                        {
-                            Console.Error.WriteLine("Failed due to error {0}", err);
-                            break;
-                        }
-
-                        File.WriteAllText(Path.ChangeExtension(className, ".cs"), outputStr);
-                    }
-                    while (false);
-
-                    Console.WriteLine("Processed in {0}ms\n", timer.ElapsedMilliseconds);
-                }
-                else
-                {
-                    Console.Error.WriteLine("Failed to read file {0}", script);
-                }
-            }
+      Console.WriteLine("Running parser. [+{0}ms]", timer.ElapsedMilliseconds);
+      Parser_Nss parser = new Parser_Nss();
+      error = parser.Parse(Path.GetFileName(script), scriptLines, lexer.Tokens);
+      if (error != 0)
+      {
+        Console.Error.WriteLine("Failed due to error {0}", error);
+        foreach (string errStr in parser.Errors)
+        {
+          Console.Error.WriteLine("  {0}", errStr);
         }
+
+        return false;
+      }
+
+      Console.WriteLine("Running output. [+{0}ms]", timer.ElapsedMilliseconds);
+      Output_CSharp output = new Output_CSharp();
+      error = output.GetFromCU(parser.CompilationUnit, out string outputStr, out string className);
+      if (error != 0)
+      {
+        Console.Error.WriteLine("Failed due to error {0}", error);
+        return false;
+      }
+
+      string outputPath = Path.Combine(destDir, Path.ChangeExtension(className, ".cs"));
+
+      File.WriteAllText(outputPath, outputStr);
+      return true;
     }
+  }
 }

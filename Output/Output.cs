@@ -1,12 +1,13 @@
-﻿using nss2csharp.Language;
-using nss2csharp.Parser;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using NWScript.Language;
+using NWScript.Language.Tokens;
+using NWScript.Parser;
 
-namespace nss2csharp.Output
+namespace NWScript.Output
 {
     public interface IOutput
     {
-        int GetFromTokens(IEnumerable<IToken> tokens, out string data);
+        int GetFromTokens(IEnumerable<ILanguageToken> tokens, out string data);
 
         int GetFromCU(CompilationUnit cu, out string data, out string className);
     }

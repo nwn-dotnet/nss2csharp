@@ -1,19 +1,19 @@
-﻿using nss2csharp.Language;
-using nss2csharp.Parser;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
+using NWScript.Language;
+using NWScript.Language.Tokens;
+using NWScript.Parser;
 
-namespace nss2csharp.Output
+namespace NWScript.Output
 {
     class Output_Nss : IOutput
     {
-        public int GetFromTokens(IEnumerable<IToken> tokens, out string data)
+        public int GetFromTokens(IEnumerable<ILanguageToken> tokens, out string data)
         {
             StringBuilder builder = new StringBuilder();
-            Language_Nss nss = new Language_Nss();
+            LanguageNss nss = new LanguageNss();
 
-            foreach (IToken token in tokens)
+            foreach (ILanguageToken token in tokens)
             {
                 string tokenAsStr = nss.StringFromToken(token);
 

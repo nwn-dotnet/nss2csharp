@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using nss2csharp.Parser;
+using NWScript.Parser;
 
-namespace nss2csharp.Output
+namespace NWScript.Output
 {
     class Output_CSharp_NWNX
     {

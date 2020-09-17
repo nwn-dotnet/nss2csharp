@@ -1,27 +1,37 @@
-﻿using nss2csharp.Language;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using NWScript.Language.Tokens;
 
-namespace nss2csharp.Lexer
+namespace NWScript.Lexer
 {
-    public class Lexer_Nss
+    public class Lexer
     {
-        public List<NssToken> Tokens { get; private set; }
+        public readonly List<ILanguageToken> Tokens = new List<ILanguageToken>();
+        public readonly List<LexerDebugRange> DebugRanges = new List<LexerDebugRange>();
 
-        public List<NssLexDebugRange> DebugRanges { get; set; }
+        private readonly string data;
+        private int chBaseIndex;
 
-        public int Analyse(string data)
+        // This is an optimization.
+        // We're progressing through all tokens in a linear fashion with no look-backs.
+        // Therefore, we don't need to find the range each time (which is very slow) - we can just
+        // start from our last index, because that's guaranteed to be the earliest one that matters.
+        private int lastDebugDataIndex = 0;
+
+        public Lexer(string data)
         {
-            Tokens = new List<NssToken>();
-            DebugRanges = new List<NssLexDebugRange>();
+            this.data = data;
+        }
 
+        public int Analyse()
+        {
             { // Set up the debug data per line.
                 int lineNum = 0;
                 int cumulativeLen = 0;
                 foreach (string line in data.Split('\n'))
                 {
-                    NssLexDebugRange range = new NssLexDebugRange();
+                    LexerDebugRange range = new LexerDebugRange();
                     range.Line = lineNum;
                     range.IndexStart = cumulativeLen;
                     range.IndexEnd = cumulativeLen + line.Length;
@@ -32,44 +42,44 @@ namespace nss2csharp.Lexer
                 }
             }
 
-            int chBaseIndex = 0;
-            while (chBaseIndex < data.Length)
+            int streamPosition = 0;
+            while (streamPosition < data.Length)
             {
-                int chBaseIndexLast = chBaseIndex;
+                int lastPosition = streamPosition;
 
                 { // PREPROCESSOR
-                    chBaseIndex = Preprocessor(chBaseIndex, data);
-                    if (chBaseIndex != chBaseIndexLast) continue;
+                    streamPosition = Preprocessor();
+                    if (streamPosition != lastPosition) continue;
                 }
 
                 { // COMMENTS
-                    chBaseIndex = Comment(chBaseIndex, data);
-                    if (chBaseIndex != chBaseIndexLast) continue;
+                    streamPosition = Comment();
+                    if (streamPosition != lastPosition) continue;
                 }
 
                 { // SEPARATORS
-                    chBaseIndex = Separator(chBaseIndex, data);
-                    if (chBaseIndex != chBaseIndexLast) continue;
+                    streamPosition = Separator();
+                    if (streamPosition != lastPosition) continue;
                 }
 
                 { // OPERATORS
-                    chBaseIndex = Operator(chBaseIndex, data);
-                    if (chBaseIndex != chBaseIndexLast) continue;
+                    streamPosition = Operator();
+                    if (streamPosition != lastPosition) continue;
                 }
 
                 { // LITERALS
-                    chBaseIndex = Literal(chBaseIndex, data);
-                    if (chBaseIndex != chBaseIndexLast) continue;
+                    streamPosition = Literal();
+                    if (streamPosition != lastPosition) continue;
                 }
 
                 { // KEYWORDS
-                    chBaseIndex = Keyword(chBaseIndex, data);
-                    if (chBaseIndex != chBaseIndexLast) continue;
+                    streamPosition = Keyword();
+                    if (streamPosition != lastPosition) continue;
                 }
 
                 { // IDENTIFIERS
-                    chBaseIndex = Identifier(chBaseIndex, data);
-                    if (chBaseIndex != chBaseIndexLast) continue;
+                    streamPosition = Identifier();
+                    if (streamPosition != lastPosition) continue;
                 }
 
                 return 1;
@@ -78,7 +88,7 @@ namespace nss2csharp.Lexer
             return 0;
         }
 
-        private int Preprocessor(int chBaseIndex, string data)
+        private int Preprocessor()
         {
             char ch = data[chBaseIndex];
             if (ch == '#')
@@ -94,25 +104,25 @@ namespace nss2csharp.Lexer
                     if (!proceed)
                     {
                         char chScanning = data[chScanningIndex];
-                        proceed = NssSeparator.Map.ContainsKey(chScanning) &&
-                            NssSeparator.Map[chScanning] == NssSeparators.NewLine;
+                        proceed = SeparatorToken.Map.ContainsKey(chScanning) &&
+                            SeparatorToken.Map[chScanning] == NssSeparators.NewLine;
                     }
 
                     if (proceed)
                     {
-                        NssPreprocessor preprocessor = new NssPreprocessor();
-                        preprocessor.m_PreprocessorType = NssPreprocessorType.Unknown;
+                        PreprocessorToken preprocessor = new PreprocessorToken();
+                        preprocessor.PreprocessorType = NssPreprocessorType.Unknown;
 
                         int chStartIndex = chBaseIndex;
                         int chEndIndex = eof ? data.Length : chScanningIndex;
 
                         if (chStartIndex == chEndIndex)
                         {
-                            preprocessor.m_Data = "";
+                            preprocessor.Data = "";
                         }
                         else
                         {
-                            preprocessor.m_Data = data.Substring(chStartIndex, chEndIndex - chStartIndex);
+                            preprocessor.Data = data.Substring(chStartIndex, chEndIndex - chStartIndex);
                         }
 
                         int chNewBaseIndex = chEndIndex;
@@ -128,7 +138,7 @@ namespace nss2csharp.Lexer
             return chBaseIndex;
         }
 
-        private int Comment(int chBaseIndex, string data)
+        private int Comment()
         {
             char ch = data[chBaseIndex];
             if (ch == '/')
@@ -150,25 +160,25 @@ namespace nss2csharp.Lexer
                             if (!proceed)
                             {
                                 char chScanning = data[chScanningIndex];
-                                proceed = NssSeparator.Map.ContainsKey(chScanning) &&
-                                    NssSeparator.Map[chScanning] == NssSeparators.NewLine;
+                                proceed = SeparatorToken.Map.ContainsKey(chScanning) &&
+                                    SeparatorToken.Map[chScanning] == NssSeparators.NewLine;
                             }
 
                             if (proceed)
                             {
-                                NssComment comment = new NssComment();
-                                comment.m_CommentType = NssCommentType.LineComment;
+                                CommentToken comment = new CommentToken();
+                                comment.CommentType = CommentType.LineComment;
 
                                 int chStartIndex = chNextIndex + 1;
                                 int chEndIndex = eof ? data.Length : chScanningIndex;
 
                                 if (chStartIndex == chEndIndex)
                                 {
-                                    comment.m_Comment = "";
+                                    comment.Comment = "";
                                 }
                                 else
                                 {
-                                    comment.m_Comment = data.Substring(chStartIndex, chEndIndex - chStartIndex);
+                                    comment.Comment = data.Substring(chStartIndex, chEndIndex - chStartIndex);
                                 }
 
                                 int chNewBaseIndex = chEndIndex;
@@ -201,13 +211,13 @@ namespace nss2csharp.Lexer
 
                         bool eof = chScanningIndex >= data.Length - 1;
 
-                        NssComment comment = new NssComment();
-                        comment.m_CommentType = NssCommentType.BlockComment;
-                        comment.m_Terminated = terminated;
+                        CommentToken comment = new CommentToken();
+                        comment.CommentType = CommentType.BlockComment;
+                        comment.Terminated = terminated;
 
                         int chStartIndex = chBaseIndex + 2;
                         int chEndIndex = !terminated && eof ? data.Length : chScanningIndex + (terminated ? -1 : 0);
-                        comment.m_Comment = data.Substring(chStartIndex, chEndIndex - chStartIndex);
+                        comment.Comment = data.Substring(chStartIndex, chEndIndex - chStartIndex);
 
                         int chNewBaseIndex = eof ? data.Length : chScanningIndex + 1;
                         AttachDebugData(comment, DebugRanges, chBaseIndex, chNewBaseIndex - 1);
@@ -221,14 +231,14 @@ namespace nss2csharp.Lexer
             return chBaseIndex;
         }
 
-        private int Separator(int chBaseIndex, string data)
+        private int Separator()
         {
             char ch = data[chBaseIndex];
 
-            if (NssSeparator.Map.ContainsKey(ch))
+            if (SeparatorToken.Map.ContainsKey(ch))
             {
-                NssSeparator separator = new NssSeparator();
-                separator.m_Separator = NssSeparator.Map[ch];
+                SeparatorToken separator = new SeparatorToken();
+                separator.m_Separator = SeparatorToken.Map[ch];
 
                 int chNewBaseIndex = chBaseIndex + 1;
                 AttachDebugData(separator, DebugRanges, chBaseIndex, chNewBaseIndex - 1);
@@ -240,14 +250,14 @@ namespace nss2csharp.Lexer
             return chBaseIndex;
         }
 
-        private int Operator(int chBaseIndex, string data)
+        private int Operator()
         {
             char ch = data[chBaseIndex];
 
-            if (NssOperator.Map.ContainsKey(ch))
+            if (OperatorToken.Map.ContainsKey(ch))
             {
-                NssOperator op = new NssOperator();
-                op.m_Operator = NssOperator.Map[ch];
+                OperatorToken op = new OperatorToken();
+                op.m_Operator = OperatorToken.Map[ch];
 
                 int chNewBaseIndex = chBaseIndex + 1;
                 AttachDebugData(op, DebugRanges, chBaseIndex, chNewBaseIndex - 1);
@@ -259,14 +269,14 @@ namespace nss2csharp.Lexer
             return chBaseIndex;
         }
 
-        private int Literal(int chBaseIndex, string data)
+        private int Literal()
         {
             char ch = data[chBaseIndex];
             bool isString = ch == '"';
             bool isNumber = char.IsNumber(ch);
             if (isString || isNumber)
             {
-                NssLiteral literal = null;
+                LiteralToken literal = null;
 
                 bool seenDecimalPlace = false;
                 int chScanningIndex = chBaseIndex;
@@ -281,7 +291,7 @@ namespace nss2csharp.Lexer
                         char chScanningLast = data[chScanningIndex - 1];
                         if (chScanning == '"' && chScanningLast != '\\')
                         {
-                            literal = new NssLiteral();
+                            literal = new LiteralToken();
                             literal.m_LiteralType = NssLiteralType.String;
 
                             int chStartIndex = chBaseIndex;
@@ -314,7 +324,7 @@ namespace nss2csharp.Lexer
                         }
                         else if (!char.IsNumber(chScanning) && (!seenDecimalPlace || (seenDecimalPlace && chScanning != 'f')))
                         {
-                            literal = new NssLiteral();
+                            literal = new LiteralToken();
                             literal.m_LiteralType = seenDecimalPlace ? NssLiteralType.Float : NssLiteralType.Int;
 
                             int chStartIndex = chBaseIndex;
@@ -335,15 +345,15 @@ namespace nss2csharp.Lexer
             return chBaseIndex;
         }
 
-        private int Keyword(int chBaseIndex, string data)
+        private int Keyword()
         {
             char ch = data[chBaseIndex];
 
             if (Tokens.Count == 0 ||
-                Tokens.Last().GetType() == typeof(NssSeparator) ||
-                Tokens.Last().GetType() == typeof(NssOperator))
+                Tokens.Last().GetType() == typeof(SeparatorToken) ||
+                Tokens.Last().GetType() == typeof(OperatorToken))
             {
-                foreach (KeyValuePair<string, NssKeywords> kvp in NssKeyword.Map)
+                foreach (KeyValuePair<string, NssKeywords> kvp in KeywordToken.Map)
                 {
                     if (chBaseIndex + kvp.Key.Length >= data.Length)
                     {
@@ -363,12 +373,12 @@ namespace nss2csharp.Lexer
                         if (!accept)
                         {
                             char chNextAlong = data[chNextAlongIndex];
-                            accept = NssSeparator.Map.ContainsKey(chNextAlong) || NssOperator.Map.ContainsKey(chNextAlong);
+                            accept = SeparatorToken.Map.ContainsKey(chNextAlong) || OperatorToken.Map.ContainsKey(chNextAlong);
                         }
 
                         if (accept)
                         {
-                            NssKeyword keyword = new NssKeyword();
+                            KeywordToken keyword = new KeywordToken();
                             keyword.m_Keyword = kvp.Value;
 
                             int chNewBaseIndex = chNextAlongIndex;
@@ -385,7 +395,7 @@ namespace nss2csharp.Lexer
             return chBaseIndex;
         }
 
-        private int Identifier(int chBaseIndex, string data)
+        private int Identifier()
         {
             char ch = data[chBaseIndex];
 
@@ -397,15 +407,15 @@ namespace nss2csharp.Lexer
                 eof = chScanningIndex >= data.Length;
                 char chScanning = data[chScanningIndex];
 
-                bool hasOperator = NssOperator.Map.ContainsKey(chScanning); // An identifier ends at the first sight of an operator.
-                bool hasSeparator = NssSeparator.Map.ContainsKey(chScanning);
+                bool hasOperator = OperatorToken.Map.ContainsKey(chScanning); // An identifier ends at the first sight of an operator.
+                bool hasSeparator = SeparatorToken.Map.ContainsKey(chScanning);
                 if (eof || hasSeparator || hasOperator)
                 {
-                    NssIdentifier identifier = new NssIdentifier();
+                    IdentifierToken identifier = new IdentifierToken();
 
                     int chStartIndex = chBaseIndex;
                     int chEndIndex = chScanningIndex + (eof ? 1 : 0);
-                    identifier.m_Identifier = data.Substring(chStartIndex, chEndIndex - chStartIndex);
+                    identifier.Identifier = data.Substring(chStartIndex, chEndIndex - chStartIndex);
 
                     int chNewBaseIndex = chScanningIndex + (eof ? 1 : 0);
                     AttachDebugData(identifier, DebugRanges, chBaseIndex, chNewBaseIndex - 1);
@@ -421,35 +431,14 @@ namespace nss2csharp.Lexer
             return chBaseIndex;
         }
 
-        public struct NssLexDebugRange
+        private void AttachDebugData(ILanguageToken token, List<LexerDebugRange> debugRanges, int indexStart, int indexEnd)
         {
-            public int Line { get; set; }
-            public int IndexStart { get; set; }
-            public int IndexEnd { get; set; }
-        }
-
-        public struct NssLexDebugInfo
-        {
-            public int LineStart { get; set; }
-            public int LineEnd { get; set; }
-            public int ColumnStart { get; set; }
-            public int ColumnEnd { get; set; }
-        }
-
-        // This is an optimization.
-        // We're progressing through all tokens in a linear fashion with no look-backs.
-        // Therefore, we don't need to find the range each time (which is very slow) - we can just
-        // start from our last index, because that's guaranteed to be the earliest one that matters.
-        private int m_LastDebugDataIndex = 0;
-
-        private void AttachDebugData(NssToken token, List<NssLexDebugRange> debugRanges, int indexStart, int indexEnd)
-        {
-            NssLexDebugInfo debugInfo = new NssLexDebugInfo();
+            LexerDebugInfo debugInfo = new LexerDebugInfo();
 
             bool foundStart = false;
             bool foundEnd = false;
 
-            for (int i = m_LastDebugDataIndex; i < debugRanges.Count; ++i)
+            for (int i = lastDebugDataIndex; i < debugRanges.Count; ++i)
             {
                 int startIndex = i;
                 int endIndex = i;
@@ -477,7 +466,7 @@ namespace nss2csharp.Lexer
                     debugInfo.LineEnd = endIndex;
                     debugInfo.ColumnStart = indexStart - debugRanges[startIndex].IndexStart;
                     debugInfo.ColumnEnd = indexEnd - debugRanges[endIndex].IndexStart;
-                    m_LastDebugDataIndex = i;
+                    lastDebugDataIndex = i;
                     break;
                 }
             }

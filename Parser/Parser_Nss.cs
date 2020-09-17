@@ -1,19 +1,19 @@
-﻿using nss2csharp.Language;
-using nss2csharp.Lexer;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using NWScript.Language.Tokens;
+using NWScript.Lexer;
 
-namespace nss2csharp.Parser
+namespace NWScript.Parser
 {
     public class Parser_Nss
     {
         public CompilationUnit CompilationUnit { get; private set; }
 
-        public List<NssToken> Tokens { get; private set; }
+        public List<ILanguageToken> Tokens { get; private set; }
 
         public List<string> Errors { get; private set; }
 
-        public int Parse(string name, string[] sourceData, List<NssToken> tokens)
+        public int Parse(string name, string[] sourceData, List<ILanguageToken> tokens)
         {
             CompilationUnit = new CompilationUnit();
             Tokens = tokens;
@@ -95,7 +95,7 @@ namespace nss2csharp.Parser
                 if (baseIndexLast != baseIndexRef) return 0;
             }
 
-            if (TraverseNextToken(out NssToken token, ref baseIndexRef) == 0)
+            if (TraverseNextToken(out ILanguageToken token, ref baseIndexRef) == 0)
             {
                 ReportTokenError(token, "Unrecognised / unhandled token");
                 return 1;
@@ -108,32 +108,32 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssPreprocessor)) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(PreprocessorToken)) return null;
 
             baseIndexRef = baseIndex;
 
-            return new UnknownPreprocessor { m_Value = ((NssPreprocessor)token).m_Data };
+            return new UnknownPreprocessor { m_Value = ((PreprocessorToken)token).Data };
         }
 
         private Comment ConstructComment(ref int baseIndexRef)
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex, false);
-            if (err != 0 || token.GetType() != typeof(NssComment)) return null;
-            NssComment commentToken = (NssComment)token;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex, false);
+            if (err != 0 || token.GetType() != typeof(CommentToken)) return null;
+            CommentToken commentToken = (CommentToken)token;
 
             Comment comment;
 
-            if (commentToken.m_CommentType == NssCommentType.LineComment)
+            if (commentToken.CommentType == CommentType.LineComment)
             {
-                comment = new LineComment { m_Comment = commentToken.m_Comment };
+                comment = new LineComment { m_Comment = commentToken.Comment };
             }
             else
             {
-                if (!commentToken.m_Terminated) return null;
-                comment = new BlockComment { m_CommentLines = commentToken.m_Comment.Split('\n').ToList() };
+                if (!commentToken.Terminated) return null;
+                comment = new BlockComment { m_CommentLines = commentToken.Comment.Split('\n').ToList() };
             }
 
             baseIndexRef = baseIndex;
@@ -144,12 +144,12 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
 
             Type ret = null;
 
-            switch (((NssKeyword)token).m_Keyword)
+            switch (((KeywordToken)token).m_Keyword)
             {
                 case NssKeywords.Void: ret = new VoidType(); break;
                 case NssKeywords.Int: ret = new IntType(); break;
@@ -160,9 +160,9 @@ namespace nss2csharp.Parser
                     StructType str = new StructType();
 
                     err = TraverseNextToken(out token, ref baseIndex);
-                    if (err != 0 || token.GetType() != typeof(NssIdentifier)) return null;
+                    if (err != 0 || token.GetType() != typeof(IdentifierToken)) return null;
 
-                    str.m_TypeName = ((NssIdentifier)token).m_Identifier;
+                    str.m_TypeName = ((IdentifierToken)token).Identifier;
                     ret = str;
 
                     break;
@@ -194,9 +194,9 @@ namespace nss2csharp.Parser
             Lvalue functionName = ConstructLvalue(ref baseIndex);
             if (functionName == null) return null;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.OpenParen) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.OpenParen) return null;
 
             List<FunctionParameter> parameters = new List<FunctionParameter>();
 
@@ -206,7 +206,7 @@ namespace nss2csharp.Parser
                 if (err != 0) return null;
 
                 // Terminate the loop if we're a close paren, or step back if not so we can continue our scan.
-                if (token.GetType() == typeof(NssSeparator) && ((NssSeparator)token).m_Separator == NssSeparators.CloseParen) break;
+                if (token.GetType() == typeof(SeparatorToken) && ((SeparatorToken)token).m_Separator == NssSeparators.CloseParen) break;
                 else --baseIndex;
 
                 Type paramType = ConstructType(ref baseIndex);
@@ -221,9 +221,9 @@ namespace nss2csharp.Parser
                 FunctionParameter param = null;
 
                 // Default value.
-                if (token.GetType() == typeof(NssOperator))
+                if (token.GetType() == typeof(OperatorToken))
                 {
-                    if (((NssOperator)token).m_Operator != NssOperators.Equals) return null;
+                    if (((OperatorToken)token).m_Operator != NssOperators.Equals) return null;
 
                     Value defaultVal = ConstructRvalue(ref baseIndex);
                     if (defaultVal == null)
@@ -241,15 +241,15 @@ namespace nss2csharp.Parser
                     if (err != 0) return null;
 
                     // If we're not a comman, just step back so the loop above can handle us.
-                    if (token.GetType() == typeof(NssSeparator) && (((NssSeparator)token).m_Separator != NssSeparators.Comma)) --baseIndex;
+                    if (token.GetType() == typeof(SeparatorToken) && (((SeparatorToken)token).m_Separator != NssSeparators.Comma)) --baseIndex;
 
                     continue;
                 }
                 // Close paren or comma
 
-                if (token.GetType() == typeof(NssSeparator))
+                if (token.GetType() == typeof(SeparatorToken))
                 {
-                    NssSeparator sepParams = (NssSeparator)token;
+                    SeparatorToken sepParams = (SeparatorToken)token;
 
                     if (sepParams.m_Separator == NssSeparators.CloseParen ||
                         sepParams.m_Separator == NssSeparators.Comma)
@@ -275,13 +275,13 @@ namespace nss2csharp.Parser
             Function ret = null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
 
-            if (((NssSeparator)token).m_Separator == NssSeparators.Semicolon)
+            if (((SeparatorToken)token).m_Separator == NssSeparators.Semicolon)
             {
                 ret = new FunctionDeclaration();
             }
-            else if (((NssSeparator)token).m_Separator == NssSeparators.OpenCurlyBrace)
+            else if (((SeparatorToken)token).m_Separator == NssSeparators.OpenCurlyBrace)
             {
                 --baseIndex; // Step base index back for the block function
 
@@ -307,21 +307,21 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssOperator)) return null;
-            if (((NssOperator)token).m_Operator != NssOperators.Addition) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(OperatorToken)) return null;
+            if (((OperatorToken)token).m_Operator != NssOperators.Addition) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssOperator)) return null;
-            if (((NssOperator)token).m_Operator != NssOperators.Addition) return null;
+            if (err != 0 || token.GetType() != typeof(OperatorToken)) return null;
+            if (((OperatorToken)token).m_Operator != NssOperators.Addition) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssIdentifier)) return null;
-            string identifier = ((NssIdentifier)token).m_Identifier;
+            if (err != 0 || token.GetType() != typeof(IdentifierToken)) return null;
+            string identifier = ((IdentifierToken)token).Identifier;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.Semicolon) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.Semicolon) return null;
 
             LvaluePreinc ret = new LvaluePreinc { m_Identifier = identifier };
             baseIndexRef = baseIndex;
@@ -332,21 +332,21 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssIdentifier)) return null;
-            string identifier = ((NssIdentifier)token).m_Identifier;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(IdentifierToken)) return null;
+            string identifier = ((IdentifierToken)token).Identifier;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssOperator)) return null;
-            if (((NssOperator)token).m_Operator != NssOperators.Addition) return null;
+            if (err != 0 || token.GetType() != typeof(OperatorToken)) return null;
+            if (((OperatorToken)token).m_Operator != NssOperators.Addition) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssOperator)) return null;
-            if (((NssOperator)token).m_Operator != NssOperators.Addition) return null;
+            if (err != 0 || token.GetType() != typeof(OperatorToken)) return null;
+            if (((OperatorToken)token).m_Operator != NssOperators.Addition) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.Semicolon) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.Semicolon) return null;
 
             LvaluePostinc ret = new LvaluePostinc { m_Identifier = identifier };
             baseIndexRef = baseIndex;
@@ -357,21 +357,21 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssOperator)) return null;
-            if (((NssOperator)token).m_Operator != NssOperators.Subtraction) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(OperatorToken)) return null;
+            if (((OperatorToken)token).m_Operator != NssOperators.Subtraction) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssOperator)) return null;
-            if (((NssOperator)token).m_Operator != NssOperators.Subtraction) return null;
+            if (err != 0 || token.GetType() != typeof(OperatorToken)) return null;
+            if (((OperatorToken)token).m_Operator != NssOperators.Subtraction) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssIdentifier)) return null;
-            string identifier = ((NssIdentifier)token).m_Identifier;
+            if (err != 0 || token.GetType() != typeof(IdentifierToken)) return null;
+            string identifier = ((IdentifierToken)token).Identifier;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.Semicolon) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.Semicolon) return null;
 
             LvaluePredec ret = new LvaluePredec { m_Identifier = identifier };
             baseIndexRef = baseIndex;
@@ -382,21 +382,21 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssIdentifier)) return null;
-            string identifier = ((NssIdentifier)token).m_Identifier;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(IdentifierToken)) return null;
+            string identifier = ((IdentifierToken)token).Identifier;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssOperator)) return null;
-            if (((NssOperator)token).m_Operator != NssOperators.Subtraction) return null;
+            if (err != 0 || token.GetType() != typeof(OperatorToken)) return null;
+            if (((OperatorToken)token).m_Operator != NssOperators.Subtraction) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssOperator)) return null;
-            if (((NssOperator)token).m_Operator != NssOperators.Subtraction) return null;
+            if (err != 0 || token.GetType() != typeof(OperatorToken)) return null;
+            if (((OperatorToken)token).m_Operator != NssOperators.Subtraction) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.Semicolon) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.Semicolon) return null;
 
             LvaluePostdec ret = new LvaluePostdec { m_Identifier = identifier };
             baseIndexRef = baseIndex;
@@ -407,9 +407,9 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssIdentifier)) return null;
-            string identifier = ((NssIdentifier)token).m_Identifier;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(IdentifierToken)) return null;
+            string identifier = ((IdentifierToken)token).Identifier;
 
             Lvalue ret = new Lvalue { m_Identifier = identifier };
             baseIndexRef = baseIndex;
@@ -420,9 +420,9 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.OpenSquareBracket) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.OpenSquareBracket) return null;
 
             VectorLiteral ret = new VectorLiteral();
 
@@ -430,22 +430,22 @@ namespace nss2csharp.Parser
             if (ret.m_X == null) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.Comma) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.Comma) return null;
 
             ret.m_Y = ConstructRvalue(ref baseIndex) as FloatLiteral;
             if (ret.m_Y == null) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.Comma) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.Comma) return null;
 
             ret.m_Z = ConstructRvalue(ref baseIndex) as FloatLiteral;
             if (ret.m_Z == null) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.CloseSquareBracket) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.CloseSquareBracket) return null;
 
             baseIndexRef = baseIndex;
             return ret;
@@ -464,24 +464,24 @@ namespace nss2csharp.Parser
                 }
             }
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
             if (err != 0) return null;
 
             bool negative = false;
 
-            if (token.GetType() == typeof(NssOperator))
+            if (token.GetType() == typeof(OperatorToken))
             {
-                if (((NssOperator)token).m_Operator != NssOperators.Subtraction) return null;
+                if (((OperatorToken)token).m_Operator != NssOperators.Subtraction) return null;
                 err = TraverseNextToken(out token, ref baseIndex);
                 if (err != 0) return null;
                 negative = true;
             }
 
-            if (token.GetType() != typeof(NssLiteral)) return null;
+            if (token.GetType() != typeof(LiteralToken)) return null;
 
             Rvalue ret = null;
 
-            NssLiteral lit = (NssLiteral)token;
+            LiteralToken lit = (LiteralToken)token;
             string literal = (negative ? "-" : "") + lit.m_Literal;
 
             switch (lit.m_LiteralType)
@@ -519,9 +519,9 @@ namespace nss2csharp.Parser
             int baseIndex = baseIndexRef;
 
             // Constness
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
             if (err != 0) return null;
-            bool constness = token.GetType() == typeof(NssKeyword) && ((NssKeyword)token).m_Keyword == NssKeywords.Const;
+            bool constness = token.GetType() == typeof(KeywordToken) && ((KeywordToken)token).m_Keyword == NssKeywords.Const;
             if (!constness) --baseIndex;
 
             // Typename
@@ -538,11 +538,11 @@ namespace nss2csharp.Parser
             LvalueDecl ret = null;
 
             // Declaration
-            if (token.GetType() == typeof(NssSeparator))
+            if (token.GetType() == typeof(SeparatorToken))
             {
                 if (constness) return null;
 
-                NssSeparator sep = (NssSeparator)token;
+                SeparatorToken sep = (SeparatorToken)token;
 
                 // If it's a comma, we're working on multiple.
                 if (sep.m_Separator == NssSeparators.Comma)
@@ -558,9 +558,9 @@ namespace nss2csharp.Parser
                         decl.m_Lvalues.Add(lvalue);
 
                         err = TraverseNextToken(out token, ref baseIndex);
-                        if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
+                        if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
 
-                        sep = (NssSeparator)token;
+                        sep = (SeparatorToken)token;
                         if (sep.m_Separator == NssSeparators.Semicolon) break;
                         else if (sep.m_Separator != NssSeparators.Comma) return null;
                     }
@@ -576,9 +576,9 @@ namespace nss2csharp.Parser
                 }
             }
             // Declaration with assignment
-            else if (token.GetType() == typeof(NssOperator))
+            else if (token.GetType() == typeof(OperatorToken))
             {
-                NssOperator op = (NssOperator)token;
+                OperatorToken op = (OperatorToken)token;
                 if (op.m_Operator != NssOperators.Equals) return null;
 
                 ArithmeticExpression expr = ConstructArithmeticExpression(ref baseIndex);
@@ -599,16 +599,16 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
-            if (((NssKeyword)token).m_Keyword != NssKeywords.Struct) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
+            if (((KeywordToken)token).m_Keyword != NssKeywords.Struct) return null;
 
             Lvalue structName = ConstructLvalue(ref baseIndex);
             if (structName == null) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.OpenCurlyBrace) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.OpenCurlyBrace) return null;
 
             StructDeclaration ret = new StructDeclaration
             {
@@ -622,8 +622,8 @@ namespace nss2csharp.Parser
                 if (decl == null)
                 {
                     err = TraverseNextToken(out token, ref baseIndex);
-                    if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-                    if (((NssSeparator)token).m_Separator != NssSeparators.CloseCurlyBrace) return null;
+                    if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+                    if (((SeparatorToken)token).m_Separator != NssSeparators.CloseCurlyBrace) return null;
                     break;
                 }
 
@@ -631,8 +631,8 @@ namespace nss2csharp.Parser
             }
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.Semicolon) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.Semicolon) return null;
 
             baseIndexRef = baseIndex;
             return ret;
@@ -641,9 +641,9 @@ namespace nss2csharp.Parser
         private RedundantSemiColon ConstructRedundantSemiColon(ref int baseIndexRef)
         {
             int baseIndex = baseIndexRef;
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.Semicolon) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.Semicolon) return null;
             baseIndexRef = baseIndex;
             return new RedundantSemiColon();
         }
@@ -656,10 +656,10 @@ namespace nss2csharp.Parser
 
             for (int i = 0; i < ops.Length; ++i)
             {
-                int err = TraverseNextToken(out NssToken token, ref baseIndex);
+                int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
                 if (err != 0) return null;
 
-                NssOperator op = token as NssOperator;
+                OperatorToken op = token as OperatorToken;
                 if (op == null)
                 {
                     --baseIndex; // Step back for caller.
@@ -719,13 +719,13 @@ namespace nss2csharp.Parser
 
             while (true)
             {
-                int err = TraverseNextToken(out NssToken token, ref baseIndex);
+                int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
                 if (err != 0) return null;
-                if (token.GetType() == typeof(NssSeparator) && ((NssSeparator)token).m_Separator == boundingSep) break;
+                if (token.GetType() == typeof(SeparatorToken) && ((SeparatorToken)token).m_Separator == boundingSep) break;
 
                 expression += token.ToString();
 
-                if (token.GetType() == typeof(NssKeyword) || token.GetType() == typeof(NssIdentifier))
+                if (token.GetType() == typeof(KeywordToken) || token.GetType() == typeof(IdentifierToken))
                 {
                     expression += " ";
                 }
@@ -740,9 +740,9 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.OpenParen) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.OpenParen) return null;
 
             string expression = "";
             int parenDepth = 1;
@@ -752,7 +752,7 @@ namespace nss2csharp.Parser
                 err = TraverseNextToken(out token, ref baseIndex);
                 if (err != 0) return null;
 
-                if (token is NssSeparator sep)
+                if (token is SeparatorToken sep)
                 {
                     if (sep.m_Separator == NssSeparators.OpenParen)
                     {
@@ -775,7 +775,7 @@ namespace nss2csharp.Parser
 
                 expression += token.ToString();
 
-                if (token.GetType() == typeof(NssKeyword) || token.GetType() == typeof(NssIdentifier))
+                if (token.GetType() == typeof(KeywordToken) || token.GetType() == typeof(IdentifierToken))
                 {
                     expression += " ";
                 }
@@ -801,9 +801,9 @@ namespace nss2csharp.Parser
             LogicalExpression args = ConstructLogicalExpression(ref baseIndex);
             if (args == null) return null;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.Semicolon) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.Semicolon) return null;
 
             FunctionCall ret = new FunctionCall { m_Name = functionName, m_Arguments = args };
             baseIndexRef = baseIndex;
@@ -832,9 +832,9 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
-            if (((NssKeyword)token).m_Keyword != NssKeywords.While) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
+            if (((KeywordToken)token).m_Keyword != NssKeywords.While) return null;
 
             LogicalExpression cond = ConstructLogicalExpression(ref baseIndex);
             if (cond == null) return null;
@@ -855,13 +855,13 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
-            if (((NssKeyword)token).m_Keyword != NssKeywords.For) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
+            if (((KeywordToken)token).m_Keyword != NssKeywords.For) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.OpenParen) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.OpenParen) return null;
 
             ArithmeticExpression pre = ConstructArithmeticExpression(ref baseIndex);
             if (pre == null) return null;
@@ -895,9 +895,9 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
-            if (((NssKeyword)token).m_Keyword != NssKeywords.Do) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
+            if (((KeywordToken)token).m_Keyword != NssKeywords.Do) return null;
 
             Node action = ConstructBlock_r(ref baseIndex);
             if (action == null)
@@ -907,15 +907,15 @@ namespace nss2csharp.Parser
             }
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
-            if (((NssKeyword)token).m_Keyword != NssKeywords.While) return null;
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
+            if (((KeywordToken)token).m_Keyword != NssKeywords.While) return null;
 
             LogicalExpression cond = ConstructLogicalExpression(ref baseIndex);
             if (cond == null) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.Semicolon) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.Semicolon) return null;
 
             DoWhileLoop ret = new DoWhileLoop { m_Expression = cond, m_Action = action };
             baseIndexRef = baseIndex;
@@ -926,9 +926,9 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
-            if (((NssKeyword)token).m_Keyword != NssKeywords.If) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
+            if (((KeywordToken)token).m_Keyword != NssKeywords.If) return null;
 
             LogicalExpression expression = ConstructLogicalExpression(ref baseIndex);
             if (expression == null) return null;
@@ -949,9 +949,9 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
-            if (((NssKeyword)token).m_Keyword != NssKeywords.Else) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
+            if (((KeywordToken)token).m_Keyword != NssKeywords.Else) return null;
 
             Node action = ConstructBlock_r(ref baseIndex);
             if (action == null)
@@ -969,9 +969,9 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
-            if (((NssKeyword)token).m_Keyword != NssKeywords.Return) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
+            if (((KeywordToken)token).m_Keyword != NssKeywords.Return) return null;
 
             ArithmeticExpression expr = ConstructArithmeticExpression(ref baseIndex);
             if (expr == null) return null;
@@ -985,9 +985,9 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
-            if (((NssKeyword)token).m_Keyword != NssKeywords.Switch) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
+            if (((KeywordToken)token).m_Keyword != NssKeywords.Switch) return null;
 
             LogicalExpression expr = ConstructLogicalExpression(ref baseIndex);
             if (expr == null) return null;
@@ -1004,11 +1004,11 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
 
             Value label = null;
-            NssKeyword keyword = (NssKeyword)token;
+            KeywordToken keyword = (KeywordToken)token;
 
             if (keyword.m_Keyword == NssKeywords.Case)
             {
@@ -1025,8 +1025,8 @@ namespace nss2csharp.Parser
             }
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssOperator)) return null;
-            if (((NssOperator)token).m_Operator != NssOperators.TernaryColon) return null;
+            if (err != 0 || token.GetType() != typeof(OperatorToken)) return null;
+            if (((OperatorToken)token).m_Operator != NssOperators.TernaryColon) return null;
 
             CaseLabel ret = new CaseLabel { m_Label = label };
             baseIndexRef = baseIndex;
@@ -1037,13 +1037,13 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssKeyword)) return null;
-            if (((NssKeyword)token).m_Keyword != NssKeywords.Break) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(KeywordToken)) return null;
+            if (((KeywordToken)token).m_Keyword != NssKeywords.Break) return null;
 
             err = TraverseNextToken(out token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.Semicolon) return null;
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.Semicolon) return null;
 
             baseIndexRef = baseIndex;
             return new BreakStatement();
@@ -1053,9 +1053,9 @@ namespace nss2csharp.Parser
         {
             int baseIndex = baseIndexRef;
 
-            int err = TraverseNextToken(out NssToken token, ref baseIndex);
-            if (err != 0 || token.GetType() != typeof(NssSeparator)) return null;
-            if (((NssSeparator)token).m_Separator != NssSeparators.OpenCurlyBrace) return null;
+            int err = TraverseNextToken(out ILanguageToken token, ref baseIndex);
+            if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
+            if (((SeparatorToken)token).m_Separator != NssSeparators.OpenCurlyBrace) return null;
 
             Block ret = new Block();
 
@@ -1077,7 +1077,7 @@ namespace nss2csharp.Parser
 
                 err = TraverseNextToken(out token, ref baseIndex);
                 if (err != 0) return null;
-                if (token.GetType() == typeof(NssSeparator) && ((NssSeparator)token).m_Separator == NssSeparators.CloseCurlyBrace) break;
+                if (token.GetType() == typeof(SeparatorToken) && ((SeparatorToken)token).m_Separator == NssSeparators.CloseCurlyBrace) break;
 
                 ReportTokenError(token, "Unrecognised token in block-level.");
 
@@ -1178,14 +1178,14 @@ namespace nss2csharp.Parser
             return null;
         }
 
-        private void ReportTokenError(NssToken token, string error)
+        private void ReportTokenError(ILanguageToken token, string error)
         {
             Errors.Add(error);
             Errors.Add(string.Format("On Token type {0}", token.GetType().Name));
 
             if (token.UserData != null)
             {
-                Lexer_Nss.NssLexDebugInfo debugInfo = (Lexer_Nss.NssLexDebugInfo)token.UserData;
+                LexerDebugInfo debugInfo = token.UserData;
                 Errors.Add(string.Format("At line {0}:{1} to line {2}:{3}.",
                     debugInfo.LineStart, debugInfo.ColumnStart,
                     debugInfo.LineEnd, debugInfo.ColumnEnd));
@@ -1197,10 +1197,10 @@ namespace nss2csharp.Parser
             }
         }
 
-        private int TraverseNextToken(out NssToken token, ref int baseIndexRef,
+        private int TraverseNextToken(out ILanguageToken token, ref int baseIndexRef,
             bool skipComments = true, bool skipWhitespace = true)
         {
-            NssToken ret = null;
+            ILanguageToken ret = null;
 
             int baseIndex = baseIndexRef;
 
@@ -1218,7 +1218,7 @@ namespace nss2csharp.Parser
 
                 if (skipWhitespace)
                 {
-                    if (ret is NssSeparator sep && (
+                    if (ret is SeparatorToken sep && (
                         sep.m_Separator == NssSeparators.Tab ||
                         sep.m_Separator == NssSeparators.Space ||
                         sep.m_Separator == NssSeparators.NewLine))
@@ -1227,7 +1227,7 @@ namespace nss2csharp.Parser
                     }
                 }
 
-                if (skipComments && ret.GetType() == typeof(NssComment))
+                if (skipComments && ret.GetType() == typeof(CommentToken))
                 {
                     skip = true;
                 }

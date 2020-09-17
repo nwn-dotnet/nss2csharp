@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace nss2csharp.Parser
+namespace NWScript.Parser
 {
     public class Node
     { }

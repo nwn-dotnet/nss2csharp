@@ -1,14 +1,14 @@
-﻿using System.CodeDom.Compiler;
-using nss2csharp.Language;
-using nss2csharp.Parser;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
+using Microsoft.CodeAnalysis.CSharp;
+using NWScript.Language;
+using NWScript.Language.Tokens;
+using NWScript.Parser;
 
-namespace nss2csharp.Output
+namespace NWScript.Output
 {
     class Output_CSharp : IOutput
     {
-        private static CodeDomProvider CodeDomProvider = CodeDomProvider.CreateProvider("C#");
         public const string Indent = "    ";
 
         public static string GetIndent(int depth)
@@ -22,7 +22,7 @@ namespace nss2csharp.Output
             return retVal;
         }
 
-        public int GetFromTokens(IEnumerable<IToken> tokens, out string data)
+        public int GetFromTokens(IEnumerable<ILanguageToken> tokens, out string data)
         {
             data = null;
             return 1;
@@ -117,6 +117,9 @@ namespace nss2csharp.Output
             else if (type == typeof(ObjectType)) return "VM.NWNX.StackPush({0})";
             else if (type == typeof(VectorType)) return "VM.NWNX.StackPush({0})";
             else if (type == typeof(EffectType)) return "VM.NWNX.StackPush({0}, NWScript.ENGINE_STRUCTURE_EFFECT)";
+            else if (type == typeof(EventType)) return "VM.NWNX.StackPush({0}, NWScript.ENGINE_STRUCTURE_EVENT)";
+            else if (type == typeof(LocationType)) return "VM.NWNX.StackPush({0}, NWScript.ENGINE_STRUCTURE_LOCATION)";
+            else if (type == typeof(TalentType)) return "VM.NWNX.StackPush({0}, NWScript.ENGINE_STRUCTURE_TALENT)";
             else if (type == typeof(ItemPropertyType)) return "VM.NWNX.StackPush({0}, NWScript.ENGINE_STRUCTURE_ITEM_PROPERTY)";
             else
             {
@@ -192,7 +195,8 @@ namespace nss2csharp.Output
 
         public static string GetSafeVariableName(string variable)
         {
-            return !CodeDomProvider.IsValidIdentifier(variable) ? $"@{variable}" : variable;
+            SyntaxKind kind = SyntaxFacts.GetKeywordKind(variable);
+            return SyntaxFacts.IsReservedKeyword(kind) ? $"@{variable}" : variable;
         }
     }
 }
