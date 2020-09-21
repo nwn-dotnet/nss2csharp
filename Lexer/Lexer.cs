@@ -287,6 +287,7 @@ namespace NWScript.Lexer
         LiteralToken literal = null;
 
         bool seenDecimalPlace = false;
+        bool isHex = false;
         int chScanningIndex = chBaseIndex;
         while (++chScanningIndex < data.Length)
         {
@@ -330,10 +331,15 @@ namespace NWScript.Lexer
             {
               seenDecimalPlace = true;
             }
-            else if (!char.IsNumber(chScanning) && (!seenDecimalPlace || (seenDecimalPlace && chScanning != 'f')))
+            else if (chScanning == 'x' || chScanning == 'X' && chScanningIndex - chBaseIndex == 1)
+            {
+              isHex = true;
+            }
+            else if ((!isHex || !Uri.IsHexDigit(chScanning)) && !char.IsNumber(chScanning) && (!seenDecimalPlace || (seenDecimalPlace && chScanning != 'f')))
             {
               literal = new LiteralToken();
               literal.LiteralType = seenDecimalPlace ? NssLiteralType.Float : NssLiteralType.Int;
+              literal.IsHex = isHex;
 
               int chStartIndex = chBaseIndex;
               int chEndIndex = chScanningIndex;

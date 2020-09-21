@@ -63,7 +63,7 @@ namespace NWScript.Parser
   public class FunctionCall : NSSNode
   {
     public Lvalue m_Name;
-    public Expression m_Arguments;
+    public string[] m_Arguments;
   }
 
   public class Expression : NSSNode

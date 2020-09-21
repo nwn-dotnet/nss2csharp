@@ -105,11 +105,6 @@ namespace NWScript.Output
       return string.Format("Call({0})", id);
     }
 
-    public static string GetNWNXSetFunction(string pluginNameVar, string methodName)
-    {
-      return $"VM.NWNX.SetFunction({pluginNameVar}, \"{methodName}\")";
-    }
-
     public static string GetSafeVariableName(string variable)
     {
       SyntaxKind kind = SyntaxFacts.GetKeywordKind(variable);

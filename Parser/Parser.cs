@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using NWScript.Language;
 using NWScript.Lexer;
 
@@ -12,6 +14,8 @@ namespace NWScript.Parser
     public List<ILanguageToken> Tokens { get; private set; }
 
     public List<string> Errors { get; private set; }
+
+    public static Regex FunctionCallRegex = new Regex(@"^(?<function_name>\w+)\((?>(?(param),)(?<param>(?>(?>[^\(\),""]|(?<p>\()|(?<-p>\))|(?(p)[^\(\)]|(?!))|(?(g)(?:""""|[^""]|(?<-g>""))|(?!))|(?<g>"")))*))+\)$", RegexOptions.Compiled);
 
     public int Parse(string name, string[] sourceData, List<ILanguageToken> tokens)
     {
@@ -520,30 +524,37 @@ namespace NWScript.Parser
       LiteralToken lit = (LiteralToken) token;
       string literal = (negative ? "-" : "") + lit.Literal;
 
-      switch (lit.LiteralType)
+      try
       {
-        case NssLiteralType.Int:
+        switch (lit.LiteralType)
         {
-          if (!int.TryParse(literal, out int value)) return null;
-          ret = new IntLiteral {Value = value};
-          break;
-        }
+          case NssLiteralType.Int:
+          {
+            int value = lit.IsHex ? Convert.ToInt32(literal, 16) : int.Parse(literal);
+            ret = new IntLiteral {Value = value};
+            break;
+          }
 
-        case NssLiteralType.Float:
-        {
-          literal = literal.TrimEnd('f');
-          if (!float.TryParse(literal, out float value)) return null;
-          ret = new FloatLiteral {Value = value};
-          break;
-        }
+          case NssLiteralType.Float:
+          {
+            literal = literal.TrimEnd('f');
+            if (!float.TryParse(literal, out float value)) return null;
+            ret = new FloatLiteral {Value = value};
+            break;
+          }
 
-        case NssLiteralType.String:
-        {
-          ret = new StringLiteral {Value = literal};
-          break;
-        }
+          case NssLiteralType.String:
+          {
+            ret = new StringLiteral {Value = literal};
+            break;
+          }
 
-        default: return null;
+          default: return null;
+        }
+      }
+      catch (InvalidCastException e)
+      {
+        return null;
       }
 
       baseIndexRef = baseIndex;
@@ -761,7 +772,7 @@ namespace NWScript.Parser
 
         expression += token.ToString();
 
-        if (token.GetType() == typeof(KeywordToken) || token.GetType() == typeof(IdentifierToken))
+        if (token.GetType() == typeof(KeywordToken) || token.GetType() == typeof(SeparatorToken))
         {
           expression += " ";
         }
@@ -811,7 +822,7 @@ namespace NWScript.Parser
 
         expression += token.ToString();
 
-        if (token.GetType() == typeof(KeywordToken) || token.GetType() == typeof(IdentifierToken))
+        if (token.GetType() == typeof(KeywordToken) || token.GetType() == typeof(SeparatorToken))
         {
           expression += " ";
         }
@@ -828,9 +839,6 @@ namespace NWScript.Parser
     {
       int baseIndex = baseIndexRef;
 
-      // For now, we're gonna treat a function call like an lvalue + a logical expression.
-      // This obviously isn't true but we really don't care about the semantics for this tool.
-
       Lvalue functionName = ConstructLvalue(ref baseIndex);
       if (functionName == null) return null;
 
@@ -841,7 +849,17 @@ namespace NWScript.Parser
       if (err != 0 || token.GetType() != typeof(SeparatorToken)) return null;
       if (((SeparatorToken) token).m_Separator != NssSeparators.Semicolon) return null;
 
-      FunctionCall ret = new FunctionCall {m_Name = functionName, m_Arguments = args};
+      MatchCollection matches = FunctionCallRegex.Matches($"{functionName.Identifier}({args.m_Expression})");
+      FunctionCall ret = new FunctionCall {m_Name = functionName, m_Arguments = matches[0].Groups["param"].Captures.Select(capture =>
+      {
+        // String literal in the argument, don't mess with it.
+        if (capture.Value.Contains("\""))
+        {
+          return capture.Value;
+        }
+
+        return capture.Value.Replace(" ", "");
+      }).ToArray()};
       baseIndexRef = baseIndex;
       return ret;
     }

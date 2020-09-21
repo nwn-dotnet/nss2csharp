@@ -13,6 +13,7 @@ namespace NWScript.Language
 
     public NssLiteralType LiteralType;
     public string Literal;
+    public bool IsHex;
   }
 
   public enum NssLiteralType
