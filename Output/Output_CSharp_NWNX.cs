@@ -102,7 +102,7 @@ namespace NWScript.Output
           {
             continue;
           }
-          
+
           BuildMethod(func);
           implementedMethods.Add(func);
         }
@@ -128,6 +128,7 @@ namespace NWScript.Output
       }
 
       stringBuilder.Append("}");
+      stringBuilder.AppendLine();
 
       if (pluginNameVar == null)
       {
