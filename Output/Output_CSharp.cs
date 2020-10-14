@@ -8,7 +8,7 @@ namespace NWScript.Output
 {
   public class Output_CSharp
   {
-    public const string Indent = "    ";
+    public const string Indent = "  ";
 
     public static string GetIndent(int depth)
     {
