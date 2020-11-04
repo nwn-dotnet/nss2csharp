@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -14,20 +13,21 @@ namespace NWScript.Output
       new Translation("NWNX_PushArgumentFloat", "VM.NWNX.StackPush({0})"),
       new Translation("NWNX_PushArgumentObject", "VM.NWNX.StackPush({0})"),
       new Translation("NWNX_PushArgumentString", "VM.NWNX.StackPush({0})"),
-      new Translation("NWNX_PushArgumentEffect", "VM.NWNX.StackPush({0}, NWScript.ENGINE_STRUCTURE_EFFECT)"),
-      new Translation("NWNX_PushArgumentItemProperty", "VM.NWNX.StackPush({0}, NWScript.ENGINE_STRUCTURE_ITEM_PROPERTY)"),
+      new Translation("NWNX_PushArgumentEffect", "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_EFFECT)"),
+      new Translation("NWNX_PushArgumentItemProperty", "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_ITEM_PROPERTY)"),
       new Translation("NWNX_GetReturnValueInt", "VM.NWNX.StackPopInt()"),
       new Translation("NWNX_GetReturnValueFloat", "VM.NWNX.StackPopFloat()"),
       new Translation("NWNX_GetReturnValueObject", "VM.NWNX.StackPopObject()"),
       new Translation("NWNX_GetReturnValueString", "VM.NWNX.StackPopString()"),
-      new Translation("NWNX_GetReturnValueEffect", "VM.NWNX.StackPopStruct(NWScript.ENGINE_STRUCTURE_EFFECT)"),
-      new Translation("NWNX_GetReturnValueItemProperty", "VM.NWNX.StackPopStruct(NWScript.ENGINE_STRUCTURE_ITEM_PROPERTY)"),
-      new Translation("DelayCommand", "NWScript.DelayCommand({0}, () => {1})"),
+      new Translation("NWNX_GetReturnValueEffect", "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_EFFECT)"),
+      new Translation("NWNX_GetReturnValueItemProperty", "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_ITEM_PROPERTY)"),
+      new Translation("DelayCommand", "DelayCommand({0}, () => {1})"),
       new Translation("Vector", "new System.Numerics.Vector3({0}, {1}, {2})"),
-      new Translation("NWNX_WebHook_SendWebHookHTTPS", "SendWebHookHTTPS({0}, {1}, {2})")
+      new Translation("NWNX_WebHook_SendWebHookHTTPS", "SendWebHookHTTPS({0}, {1}, {2})"),
+      new Translation("GetStringLength", "{0}.Length"),
     };
 
-    public static string DefaultFormat => "{0}{1}({2})";
+    public static string DefaultFormat => "{0}({1})";
 
     public static string TranslateCall(string pluginName, string nssFuncName, string[] args)
     {
@@ -47,15 +47,12 @@ namespace NWScript.Output
         cleanedArgs[i] = ProcessArg(pluginName, cleanedArgs[i]);
       }
 
-      bool isNWNXFunction = false;
       if (nssFuncName.StartsWith(pluginName))
       {
-        isNWNXFunction = true;
         nssFuncName = nssFuncName.Replace($"{pluginName}_", "");
       }
 
-      string prefix = !isNWNXFunction ? "NWScript." : "";
-      return string.Format(DefaultFormat, prefix, nssFuncName, string.Join(", ", cleanedArgs));
+      return string.Format(DefaultFormat, nssFuncName, string.Join(", ", cleanedArgs));
     }
 
     public static string TryTranslate(string pluginName, string statement)
@@ -86,11 +83,6 @@ namespace NWScript.Output
     {
       string retVal = arg;
 
-      if (IsNssConstant(retVal))
-      {
-        retVal = "NWScript." + retVal;
-      }
-
       // Vectors
       if (retVal.EndsWith(".x") || retVal.EndsWith(".y") || retVal.EndsWith(".z"))
       {
@@ -105,13 +97,6 @@ namespace NWScript.Output
       retVal = Output_CSharp.GetSafeVariableName(retVal);
 
       return retVal;
-    }
-
-    public static bool IsNssConstant(string value)
-    {
-      return value == "FALSE" ||
-        value == "TRUE" ||
-        value.StartsWith("INVENTORY_SLOT");
     }
 
     public static bool IsBadArg(string pluginName, string arg)

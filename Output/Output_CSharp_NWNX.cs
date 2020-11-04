@@ -15,6 +15,9 @@ namespace NWScript.Output
       stringBuilder.Clear();
       pluginNameVar = null;
 
+      stringBuilder.AppendLine("using static NWN.Core.NWScript;");
+      stringBuilder.AppendLine();
+
       stringBuilder.AppendLine("namespace NWN.Core.NWNX");
       stringBuilder.AppendLine("{");
 
@@ -206,12 +209,6 @@ namespace NWScript.Output
           break;
         case LvalueAssignment assignment:
           expression = VMTranslations.TryTranslate(pluginNameVar, assignment.m_Expression.m_Expression);
-
-          if (VMTranslations.IsNssConstant(expression))
-          {
-            expression = "NWScript." + expression;
-          }
-
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{assignment.m_Lvalue.Identifier} = {expression};");
           break;
         case LvalueDeclSingle declaration:
@@ -246,7 +243,7 @@ namespace NWScript.Output
 
           if (expression != ifStatement.m_Expression.m_Expression)
           {
-            expression = $"{expression} == NWScript.TRUE";
+            expression = $"{expression} == TRUE";
           }
 
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}if ({expression})");

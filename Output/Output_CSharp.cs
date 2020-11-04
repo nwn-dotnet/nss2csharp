@@ -59,12 +59,7 @@ namespace NWScript.Output
       {
         if (lv.Identifier == "OBJECT_SELF")
         {
-          return isPlugin ? "NWScript.OBJECT_INVALID" : "OBJECT_INVALID";
-        }
-
-        if (isPlugin && !lv.Identifier.StartsWith("NWNX_"))
-        {
-          return $"NWScript.{lv.Identifier}";
+          return "OBJECT_INVALID";
         }
 
         return GetSafeVariableName(lv.Identifier);
