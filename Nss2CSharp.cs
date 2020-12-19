@@ -15,23 +15,26 @@ namespace NWScript
 
     public static void Main(string[] args)
     {
-      if (args.Length != 2)
+      if (args.Length <= 0 || args.Length % 2 != 0)
       {
-        Console.WriteLine("Usage: Nss2CSharp <source_dir> <dest_dir>");
+        Console.WriteLine("Usage: Nss2CSharp <source_dir_1> <dest_dir_1> <source_dir_2...> <dest_dir2...>");
         return;
       }
 
-      string sourceDir = args[0];
-      destDir = args[1];
-
-      string[] scripts = Directory.GetFiles(sourceDir, "*.nss", SearchOption.AllDirectories);
-
-      // Process each file
-      foreach (string script in scripts)
+      for (int i = 0; i < args.Length; i+=2)
       {
-        if (ProcessFile(script))
+        string sourceDir = args[i];
+        destDir = args[i + 1];
+
+        string[] scripts = Directory.GetFiles(sourceDir, "*.nss", SearchOption.AllDirectories);
+
+        // Process each file
+        foreach (string script in scripts)
         {
-          Console.WriteLine("Processed in {0}ms\n", timer.ElapsedMilliseconds);
+          if (ProcessFile(script))
+          {
+            Console.WriteLine("Processed in {0}ms\n", timer.ElapsedMilliseconds);
+          }
         }
       }
     }
