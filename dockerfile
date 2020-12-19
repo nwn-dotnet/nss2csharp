@@ -5,5 +5,6 @@ WORKDIR /Build
 RUN dotnet publish -c Release -o /publish
 FROM mcr.microsoft.com/dotnet/runtime
 WORKDIR /app
+
 COPY --from=build /publish .
 CMD ["dotnet", "Nss2CSharp.dll"]
