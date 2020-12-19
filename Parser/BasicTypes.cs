@@ -134,22 +134,33 @@ namespace NWScript.Parser
   {
     public override string Declaration => "System.IntPtr";
 
-    public override string NativePushFormat => "VM.StackPush({0}, ENGINE_STRUCTURE_ITEM_PROPERTY)";
-    public override string NWNXPushFormat => "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_ITEM_PROPERTY)";
+    public override string NativePushFormat => "VM.StackPush({0}, ENGINE_STRUCTURE_ITEMPROPERTY)";
+    public override string NWNXPushFormat => "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_ITEMPROPERTY)";
 
-    public override string NativePopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_ITEM_PROPERTY)";
-    public override string NWNXPopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_ITEM_PROPERTY)";
+    public override string NativePopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_ITEMPROPERTY)";
+    public override string NWNXPopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_ITEMPROPERTY)";
   }
 
   public class SQLQueryType : NSSType
   {
     public override string Declaration => "System.IntPtr";
 
-    public override string NativePushFormat => "VM.StackPush({0}, ENGINE_STRUCTURE_SQL_QUERY)";
-    public override string NWNXPushFormat => "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_SQL_QUERY)";
+    public override string NativePushFormat => "VM.StackPush({0}, ENGINE_STRUCTURE_SQLQUERY)";
+    public override string NWNXPushFormat => "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_SQLQUERY)";
 
-    public override string NativePopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_SQL_QUERY)";
-    public override string NWNXPopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_SQL_QUERY)";
+    public override string NativePopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_SQLQUERY)";
+    public override string NWNXPopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_SQLQUERY)";
+  }
+
+  public class CassowaryType : NSSType
+  {
+    public override string Declaration => "System.IntPtr";
+
+    public override string NativePushFormat => "VM.StackPush({0}, ENGINE_STRUCTURE_CASSOWARY)";
+    public override string NWNXPushFormat => "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_CASSOWARY)";
+
+    public override string NativePopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_CASSOWARY)";
+    public override string NWNXPopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_CASSOWARY)";
   }
 
   public class ActionType : NSSType

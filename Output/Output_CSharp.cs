@@ -78,6 +78,11 @@ namespace NWScript.Output
       }
       else if (value is VectorLiteral vectorLiteral)
       {
+        if (vectorLiteral.m_X.Value == 0 && vectorLiteral.m_Y.Value == 0 && vectorLiteral.m_Z.Value == 0)
+        {
+          return "default";
+        }
+
         return "null";
       }
 
@@ -97,7 +102,7 @@ namespace NWScript.Output
 
     public static string GetInternalCall(int id)
     {
-      return string.Format("Call({0})", id);
+      return string.Format("VM.Call({0})", id);
     }
 
     public static string GetSafeVariableName(string variable)

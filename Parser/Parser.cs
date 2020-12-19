@@ -215,6 +215,9 @@ namespace NWScript.Parser
         case NssKeywords.SqlQuery:
           ret = new SQLQueryType();
           break;
+        case NssKeywords.Cassowary:
+          ret = new CassowaryType();
+          break;
         default:
           return null;
       }

@@ -42,6 +42,7 @@ namespace NWScript.Language
       {"vector", NssKeywords.Vector},
       {"itemproperty", NssKeywords.ItemProperty},
       {"sqlquery", NssKeywords.SqlQuery},
+      {"cassowary", NssKeywords.Cassowary},
       {"effect", NssKeywords.Effect},
       {"talent", NssKeywords.Talent},
       {"action", NssKeywords.Action},
@@ -78,6 +79,7 @@ namespace NWScript.Language
     Action,
     Event,
     SqlQuery,
+    Cassowary,
     Default
   }
 }
