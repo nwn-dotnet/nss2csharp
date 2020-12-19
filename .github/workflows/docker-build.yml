@@ -1,7 +1,7 @@
 name: Build-Docker
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "dockerfile"
   workflow_dispatch:
