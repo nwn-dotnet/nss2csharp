@@ -4,7 +4,7 @@ WORKDIR /Build
 RUN dotnet publish -c Release -o /publish
 
 FROM mcr.microsoft.com/dotnet/runtime
-RUN apt update && apt install wget && apt clean && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install wget -y && apt clean && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /publish .
 CMD ["dotnet", "Nss2CSharp.dll"]
