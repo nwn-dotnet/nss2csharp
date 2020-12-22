@@ -137,7 +137,7 @@ namespace NWScript.Parser
     public override string NativePushFormat => "VM.StackPush({0}, ENGINE_STRUCTURE_ITEMPROPERTY)";
     public override string NWNXPushFormat => "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_ITEMPROPERTY)";
 
-    public override string NativePopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_ITEMPROPERTY)";
+    public override string NativePopFormat => "VM.StackPopStruct(ENGINE_STRUCTURE_ITEMPROPERTY)";
     public override string NWNXPopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_ITEMPROPERTY)";
   }
 
@@ -148,7 +148,7 @@ namespace NWScript.Parser
     public override string NativePushFormat => "VM.StackPush({0}, ENGINE_STRUCTURE_SQLQUERY)";
     public override string NWNXPushFormat => "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_SQLQUERY)";
 
-    public override string NativePopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_SQLQUERY)";
+    public override string NativePopFormat => "VM.StackPopStruct(ENGINE_STRUCTURE_SQLQUERY)";
     public override string NWNXPopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_SQLQUERY)";
   }
 
@@ -159,7 +159,7 @@ namespace NWScript.Parser
     public override string NativePushFormat => "VM.StackPush({0}, ENGINE_STRUCTURE_CASSOWARY)";
     public override string NWNXPushFormat => "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_CASSOWARY)";
 
-    public override string NativePopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_CASSOWARY)";
+    public override string NativePopFormat => "VM.StackPopStruct(ENGINE_STRUCTURE_CASSOWARY)";
     public override string NWNXPopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_CASSOWARY)";
   }
 
