@@ -40,7 +40,7 @@ namespace NWScript.Output
     private static readonly List<string> customConstants = new List<string>
     {
       "public const uint OBJECT_INVALID = 0x7F000000;",
-      "public static uint OBJECT_SELF = OBJECT_INVALID;"
+      "public static uint OBJECT_SELF => NWNCore.GameManager.ObjectSelf;"
     };
 
     private readonly StringBuilder stringBuilder = new StringBuilder();
