@@ -184,13 +184,15 @@ namespace NWScript.Output
 
     private void BuildImplementation(FunctionImplementation implementation)
     {
+      List<string> vectorDecls = new List<string>();
+
       foreach (NSSNode node in implementation.m_Block.m_Nodes)
       {
-        ProcessImplementationNode(implementation, node, 3);
+        ProcessImplementationNode(implementation, vectorDecls, node, 3);
       }
     }
 
-    private void ProcessImplementationNode(FunctionImplementation implementation, NSSNode node, int depth)
+    private void ProcessImplementationNode(FunctionImplementation implementation, List<string> vectorDecls, NSSNode node, int depth)
     {
       string expression;
 
@@ -208,17 +210,28 @@ namespace NWScript.Output
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{declAssignment.m_Type.Declaration} {declAssignment.m_Lvalue.Identifier} = {expression};");
           break;
         case LvalueAssignment assignment:
+          string[] identifier = assignment.m_Lvalue.Identifier.Split('.', 2);
+          if (identifier.Length > 1 && vectorDecls.Contains(identifier[0]))
+          {
+            identifier[1] = identifier[1].ToUpper();
+          }
+
           expression = VMTranslations.TryTranslate(pluginNameVar, assignment.m_Expression.m_Expression);
-          stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{assignment.m_Lvalue.Identifier} = {expression};");
+          stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{string.Join('.', identifier)} = {expression};");
           break;
         case LvalueDeclSingle declaration:
           if (declaration.m_Type.GetType() == typeof(StringType))
           {
             stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{RemovePrefixes(declaration.m_Type.Declaration)} {declaration.m_Lvalue.Identifier} = \"\";");
           }
-          else if (declaration.m_Type.GetType() == typeof(StructType))
+          else if (declaration.m_Type is StructType)
           {
             stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{RemovePrefixes(declaration.m_Type.Declaration)} {declaration.m_Lvalue.Identifier} = default;");
+          }
+          else if (declaration.m_Type is VectorType)
+          {
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{RemovePrefixes(declaration.m_Type.Declaration)} {declaration.m_Lvalue.Identifier} = default;");
+            vectorDecls.Add(declaration.m_Lvalue.Identifier);
           }
           else
           {
@@ -230,7 +243,7 @@ namespace NWScript.Output
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{expression};");
           break;
         case ReturnStatement returnStatement:
-          if (implementation.ReturnType is StructType structType)
+          if (implementation.ReturnType is StructType || implementation.ReturnType is VectorType)
           {
             stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}return {returnStatement.m_Expression.m_Expression};");
             break;
@@ -247,26 +260,24 @@ namespace NWScript.Output
           }
 
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}if ({expression})");
-          ProcessImplementationNode(implementation, ifStatement.m_Action, depth);
+          ProcessImplementationNode(implementation, vectorDecls, ifStatement.m_Action, depth);
           break;
         case ElseStatement elseStatement:
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}else");
-          ProcessImplementationNode(implementation, elseStatement.m_Action, depth);
+          ProcessImplementationNode(implementation, vectorDecls, elseStatement.m_Action, depth);
           break;
         case ForLoop forLoop:
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}for ({forLoop.m_Pre.m_Expression}; {forLoop.m_Condition.m_Expression}; {forLoop.m_Post.m_Expression})");
-          ProcessImplementationNode(implementation, forLoop.m_Action, depth);
+          ProcessImplementationNode(implementation, vectorDecls, forLoop.m_Action, depth);
           break;
         case Block block:
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{{");
           foreach (NSSNode childNode in block.m_Nodes)
           {
-            ProcessImplementationNode(implementation, childNode, depth + 1);
+            ProcessImplementationNode(implementation, vectorDecls, childNode, depth + 1);
           }
 
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}}}");
-          break;
-        default:
           break;
       }
     }
