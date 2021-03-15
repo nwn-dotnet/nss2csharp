@@ -117,7 +117,7 @@ namespace NWScript.Output
       foreach (StructDeclaration structDeclaration in cu.m_Nodes.OfType<StructDeclaration>())
       {
         stringBuilder.AppendLine();
-        stringBuilder.AppendLine($"{Output_CSharp.GetIndent(1)}public struct {RemovePrefixes(structDeclaration.m_Name.Identifier)}");
+        stringBuilder.AppendLine($"{Output_CSharp.GetIndent(1)}public struct {VMTranslations.RemovePrefixes(pluginNameVar, structDeclaration.m_Name.Identifier)}");
         stringBuilder.AppendLine($"{Output_CSharp.GetIndent(1)}{{");
 
         foreach (LvalueDeclSingle dec in structDeclaration.m_Members.OfType<LvalueDeclSingle>())
@@ -146,13 +146,13 @@ namespace NWScript.Output
 
     private void BuildMethod(FunctionImplementation implementation)
     {
-      string name = implementation.Name.Identifier.Replace(pluginNameVar + "_", "");
-      string retType = RemovePrefixes(implementation.ReturnType.Declaration);
+      string name = VMTranslations.RemovePrefixes(pluginNameVar, implementation.Name.Identifier, false);
+      string retType = VMTranslations.RemovePrefixes(pluginNameVar, implementation.ReturnType.Declaration);
 
       List<string> funcParams = new List<string>();
       foreach (FunctionParameter param in implementation.Parameters)
       {
-        string paramType = RemovePrefixes(param.m_Type.Declaration);
+        string paramType = VMTranslations.RemovePrefixes(pluginNameVar, param.m_Type.Declaration);
         string paramName = Output_CSharp.GetSafeVariableName(param.m_Lvalue.Identifier);
 
         string paramStr = paramType + " " + paramName;
@@ -177,10 +177,7 @@ namespace NWScript.Output
       stringBuilder.AppendLine();
     }
 
-    private string RemovePrefixes(string fullName)
-    {
-      return fullName.Replace($"{pluginNameVar}_", "").Replace("NWNX_", "");
-    }
+
 
     private void BuildImplementation(FunctionImplementation implementation)
     {
@@ -199,14 +196,15 @@ namespace NWScript.Output
       switch (node)
       {
         case LvalueDeclSingleWithAssignment declAssignment:
+          expression = VMTranslations.TryTranslate(pluginNameVar, declAssignment.m_Expression.m_Expression);
+
           if (declAssignment.m_Lvalue.Identifier == "sFunc")
           {
-            string methodName = declAssignment.m_Expression.m_Expression;
-            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}VM.NWNX.SetFunction({pluginNameVar}, {methodName});");
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}const {declAssignment.m_Type.Declaration} {declAssignment.m_Lvalue.Identifier} = {expression};");
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}VM.NWNX.SetFunction({pluginNameVar}, sFunc);");
             break;
           }
 
-          expression = VMTranslations.TryTranslate(pluginNameVar, declAssignment.m_Expression.m_Expression);
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{declAssignment.m_Type.Declaration} {declAssignment.m_Lvalue.Identifier} = {expression};");
           break;
         case LvalueAssignment assignment:
@@ -222,20 +220,20 @@ namespace NWScript.Output
         case LvalueDeclSingle declaration:
           if (declaration.m_Type.GetType() == typeof(StringType))
           {
-            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{RemovePrefixes(declaration.m_Type.Declaration)} {declaration.m_Lvalue.Identifier} = \"\";");
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{VMTranslations.RemovePrefixes(pluginNameVar, declaration.m_Type.Declaration)} {declaration.m_Lvalue.Identifier} = \"\";");
           }
           else if (declaration.m_Type is StructType)
           {
-            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{RemovePrefixes(declaration.m_Type.Declaration)} {declaration.m_Lvalue.Identifier} = default;");
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{VMTranslations.RemovePrefixes(pluginNameVar, declaration.m_Type.Declaration)} {declaration.m_Lvalue.Identifier} = default;");
           }
           else if (declaration.m_Type is VectorType)
           {
-            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{RemovePrefixes(declaration.m_Type.Declaration)} {declaration.m_Lvalue.Identifier} = default;");
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{VMTranslations.RemovePrefixes(pluginNameVar, declaration.m_Type.Declaration)} {declaration.m_Lvalue.Identifier} = default;");
             vectorDecls.Add(declaration.m_Lvalue.Identifier);
           }
           else
           {
-            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{RemovePrefixes(declaration.m_Type.Declaration)} {declaration.m_Lvalue.Identifier};");
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{VMTranslations.RemovePrefixes(pluginNameVar, declaration.m_Type.Declaration)} {declaration.m_Lvalue.Identifier};");
           }
           break;
         case FunctionCall functionCall:
@@ -254,9 +252,16 @@ namespace NWScript.Output
         case IfStatement ifStatement:
           expression = VMTranslations.TryTranslate(pluginNameVar, ifStatement.m_Expression.m_Expression);
 
-          if (expression != ifStatement.m_Expression.m_Expression)
+          if (!expression.Contains("==") && !expression.Contains("!=") && !expression.Contains("<") && !expression.Contains(">"))
           {
-            expression = $"{expression} == TRUE";
+            if (expression.StartsWith("!"))
+            {
+              expression = $"{expression.Substring(1)} == FALSE";
+            }
+            else
+            {
+              expression = $"{expression} == TRUE";
+            }
           }
 
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}if ({expression})");

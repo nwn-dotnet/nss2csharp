@@ -9,12 +9,12 @@ namespace NWScript.Output
     private static readonly List<Translation> translations = new List<Translation>
     {
       new Translation("NWNX_CallFunction", "VM.NWNX.Call()"),
-      new Translation("NWNX_PushArgumentInt", "VM.NWNX.StackPush({0})"),
-      new Translation("NWNX_PushArgumentFloat", "VM.NWNX.StackPush({0})"),
-      new Translation("NWNX_PushArgumentObject", "VM.NWNX.StackPush({0})"),
-      new Translation("NWNX_PushArgumentString", "VM.NWNX.StackPush({0})"),
-      new Translation("NWNX_PushArgumentEffect", "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_EFFECT)"),
-      new Translation("NWNX_PushArgumentItemProperty", "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_ITEMPROPERTY)"),
+      new Translation("NWNX_PushArgumentInt", "VM.NWNX.StackPush({1})"),
+      new Translation("NWNX_PushArgumentFloat", "VM.NWNX.StackPush({1})"),
+      new Translation("NWNX_PushArgumentObject", "VM.NWNX.StackPush({1})"),
+      new Translation("NWNX_PushArgumentString", "VM.NWNX.StackPush({1})"),
+      new Translation("NWNX_PushArgumentEffect", "VM.NWNX.StackPush({1}, ENGINE_STRUCTURE_EFFECT)"),
+      new Translation("NWNX_PushArgumentItemProperty", "VM.NWNX.StackPush({1}, ENGINE_STRUCTURE_ITEMPROPERTY)"),
       new Translation("NWNX_GetReturnValueInt", "VM.NWNX.StackPopInt()"),
       new Translation("NWNX_GetReturnValueFloat", "VM.NWNX.StackPopFloat()"),
       new Translation("NWNX_GetReturnValueObject", "VM.NWNX.StackPopObject()"),
@@ -28,6 +28,17 @@ namespace NWScript.Output
     };
 
     public static string DefaultFormat => "{0}({1})";
+
+    public static string RemovePrefixes(string pluginName, string fullName, bool includeNWNX = true)
+    {
+      if (!fullName.StartsWith($"{pluginName}_"))
+      {
+        return fullName;
+      }
+
+      string retVal = fullName.Replace($"{pluginName}_", "");
+      return includeNWNX ? retVal.Replace("NWNX_", "") : retVal;
+    }
 
     public static string TranslateCall(string pluginName, string nssFuncName, string[] args)
     {
@@ -47,9 +58,9 @@ namespace NWScript.Output
         cleanedArgs[i] = ProcessArg(pluginName, cleanedArgs[i]);
       }
 
-      if (nssFuncName.StartsWith(pluginName))
+      if (nssFuncName.StartsWith(pluginName) || nssFuncName.StartsWith($"__{pluginName}"))
       {
-        nssFuncName = nssFuncName.Replace($"{pluginName}_", "");
+        nssFuncName = RemovePrefixes(pluginName, nssFuncName, false);
       }
 
       return string.Format(DefaultFormat, nssFuncName, string.Join(", ", cleanedArgs));
@@ -93,7 +104,7 @@ namespace NWScript.Output
       // Functions
       retVal = TryTranslate(pluginName, retVal);
 
-      retVal = retVal.Replace($"{pluginName}_", "");
+      retVal = RemovePrefixes(pluginName, retVal, false);
       retVal = Output_CSharp.GetSafeVariableName(retVal);
 
       return retVal;
@@ -101,8 +112,7 @@ namespace NWScript.Output
 
     public static bool IsBadArg(string pluginName, string arg)
     {
-      return arg == pluginName ||
-        arg == "sFunc";
+      return arg == pluginName;
     }
   }
 
