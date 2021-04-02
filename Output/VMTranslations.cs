@@ -8,23 +8,23 @@ namespace NWScript.Output
   {
     private static readonly List<Translation> translations = new List<Translation>
     {
-      new Translation("NWNX_CallFunction", "VM.NWNX.Call()"),
-      new Translation("NWNX_PushArgumentInt", "VM.NWNX.StackPush({1})"),
-      new Translation("NWNX_PushArgumentFloat", "VM.NWNX.StackPush({1})"),
-      new Translation("NWNX_PushArgumentObject", "VM.NWNX.StackPush({1})"),
-      new Translation("NWNX_PushArgumentString", "VM.NWNX.StackPush({1})"),
-      new Translation("NWNX_PushArgumentEffect", "VM.NWNX.StackPush({1}, ENGINE_STRUCTURE_EFFECT)"),
-      new Translation("NWNX_PushArgumentItemProperty", "VM.NWNX.StackPush({1}, ENGINE_STRUCTURE_ITEMPROPERTY)"),
-      new Translation("NWNX_GetReturnValueInt", "VM.NWNX.StackPopInt()"),
-      new Translation("NWNX_GetReturnValueFloat", "VM.NWNX.StackPopFloat()"),
-      new Translation("NWNX_GetReturnValueObject", "VM.NWNX.StackPopObject()"),
-      new Translation("NWNX_GetReturnValueString", "VM.NWNX.StackPopString()"),
-      new Translation("NWNX_GetReturnValueEffect", "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_EFFECT)"),
-      new Translation("NWNX_GetReturnValueItemProperty", "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_ITEMPROPERTY)"),
-      new Translation("DelayCommand", "DelayCommand({0}, () => {1})"),
-      new Translation("Vector", "new System.Numerics.Vector3({0}, {1}, {2})"),
-      new Translation("NWNX_WebHook_SendWebHookHTTPS", "SendWebHookHTTPS({0}, {1}, {2})"),
-      new Translation("GetStringLength", "{0}.Length"),
+      new Translation("NWNX_CallFunction", "VM.NWNX.Call()", false),
+      new Translation("NWNX_PushArgumentInt", "VM.NWNX.StackPush({0})", true),
+      new Translation("NWNX_PushArgumentFloat", "VM.NWNX.StackPush({0})", true),
+      new Translation("NWNX_PushArgumentObject", "VM.NWNX.StackPush({0})", true),
+      new Translation("NWNX_PushArgumentString", "VM.NWNX.StackPush({0})", true),
+      new Translation("NWNX_PushArgumentEffect", "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_EFFECT)", true),
+      new Translation("NWNX_PushArgumentItemProperty", "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_ITEMPROPERTY)", true),
+      new Translation("NWNX_GetReturnValueInt", "VM.NWNX.StackPopInt()", false),
+      new Translation("NWNX_GetReturnValueFloat", "VM.NWNX.StackPopFloat()", false),
+      new Translation("NWNX_GetReturnValueObject", "VM.NWNX.StackPopObject()", false),
+      new Translation("NWNX_GetReturnValueString", "VM.NWNX.StackPopString()", false),
+      new Translation("NWNX_GetReturnValueEffect", "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_EFFECT)", false),
+      new Translation("NWNX_GetReturnValueItemProperty", "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_ITEMPROPERTY)", false),
+      new Translation("DelayCommand", "DelayCommand({0}, () => {1})", true),
+      new Translation("Vector", "new System.Numerics.Vector3({0}, {1}, {2})", true),
+      new Translation("NWNX_WebHook_SendWebHookHTTPS", "SendWebHookHTTPS({0}, {1}, {2})", true),
+      new Translation("GetStringLength", "{0}.Length", true),
     };
 
     public static string DefaultFormat => "{0}({1})";
@@ -120,15 +120,22 @@ namespace NWScript.Output
   {
     public readonly string NssFunction;
     public readonly string CsharpFunction;
+    public readonly bool HasArgs;
 
-    public Translation(string nssFunction, string csharpFormat)
+    public Translation(string nssFunction, string csharpFormat, bool hasArgs)
     {
       this.NssFunction = nssFunction;
       this.CsharpFunction = csharpFormat;
+      this.HasArgs = hasArgs;
     }
 
     public string Translate(string pluginName, string[] args)
     {
+      if (!HasArgs)
+      {
+        return CsharpFunction;
+      }
+
       List<string> cleanedArgs = args.ToList();
       cleanedArgs.RemoveAll(arg => VMTranslations.IsBadArg(pluginName, arg));
 
