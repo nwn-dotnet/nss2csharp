@@ -32,18 +32,26 @@ namespace NWScript.Output
         NSSNode node = cu.m_Nodes[index];
         if (node is LineComment lineComment)
         {
-          if (lineComment.Comment.Contains("@param"))
+          string xmlEscapedComment = lineComment.Comment
+            .Replace("&", "&amp;")
+            .Replace("\"", "&quot;")
+            .Replace("'", "&apos;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("/ @}", " @}");
+
+          if (xmlEscapedComment.Contains("@param"))
           {
-            string paramName = lineComment.Comment.Split(' ')[2];
-            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//{lineComment.Comment.Replace($"@param {paramName} ", $"<param name=\"{paramName}\">")}</param>");
+            string paramName = xmlEscapedComment.Split(' ')[2];
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//{xmlEscapedComment.Replace($"@param {paramName}", $"<param name=\"{paramName}\">")}</param>");
           }
-          else if (lineComment.Comment.Contains("@return"))
+          else if (xmlEscapedComment.Contains("@return"))
           {
-            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//{lineComment.Comment.Replace("@return ", $"<returns>")}</returns>");
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//{xmlEscapedComment.Replace("@return", $"<returns>")}</returns>");
           }
           else
           {
-            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//" + lineComment.Comment.Replace("@brief ", ""));
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//" + xmlEscapedComment.Replace("@brief ", ""));
           }
         }
 

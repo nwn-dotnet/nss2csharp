@@ -69,7 +69,14 @@ namespace NWScript.Output
 
         if (node is LineComment lineComment)
         {
-          stringBuilder.Append($"{Output_CSharp.GetIndent(2)}/// " + lineComment.Comment);
+          string xmlEscapedComment = lineComment.Comment
+            .Replace("\"", "&quot;")
+            .Replace("'", "&apos;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("&", "&amp;");
+
+          stringBuilder.Append($"{Output_CSharp.GetIndent(2)}/// " + xmlEscapedComment);
           if (nextNode is Comment)
           {
             stringBuilder.Append("<br/>");
