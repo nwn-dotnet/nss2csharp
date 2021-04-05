@@ -43,11 +43,11 @@ namespace NWScript.Output
           if (xmlEscapedComment.Contains("@param"))
           {
             string paramName = xmlEscapedComment.Split(' ')[2];
-            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//{xmlEscapedComment.Replace($"@param {paramName}", $"<param name=\"{paramName}\">")}</param>");
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//{xmlEscapedComment.Replace($"@param {paramName} ", $"<param name=\"{paramName}\">").Replace($"@param {paramName}", $"<param name=\"{paramName}\">")}</param>");
           }
           else if (xmlEscapedComment.Contains("@return"))
           {
-            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//{xmlEscapedComment.Replace("@return", $"<returns>")}</returns>");
+            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}//{xmlEscapedComment.Replace("@return ", $"<returns>").Replace("@return", $"<returns>")}</returns>");
           }
           else
           {
