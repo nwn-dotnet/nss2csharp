@@ -12,25 +12,25 @@ namespace NWScript.Output
     {
       {
         "AssignCommand",
-        $"{Output_CSharp.GetIndent(2)}public static void AssignCommand(uint oActionSubject, ActionDelegate aActionToAssign)\n" +
+        $"{Output_CSharp.GetIndent(2)}public static void AssignCommand(uint oActionSubject, System.Action aActionToAssign)\n" +
         $"{Output_CSharp.GetIndent(2)}{{\n" +
-        $"{Output_CSharp.GetIndent(3)}NWNCore.FunctionHandler.ClosureAssignCommand(oActionSubject, aActionToAssign);\n" +
+        $"{Output_CSharp.GetIndent(3)}NWNCore.FunctionHandler!.ClosureAssignCommand(oActionSubject, aActionToAssign);\n" +
         $"{Output_CSharp.GetIndent(3)}// Function ID 6\n" +
         $"{Output_CSharp.GetIndent(2)}}}"
       },
       {
         "DelayCommand",
-        $"{Output_CSharp.GetIndent(2)}public static void DelayCommand(float fSeconds, ActionDelegate aActionToDelay)\n" +
+        $"{Output_CSharp.GetIndent(2)}public static void DelayCommand(float fSeconds, System.Action aActionToDelay)\n" +
         $"{Output_CSharp.GetIndent(2)}{{\n" +
-        $"{Output_CSharp.GetIndent(3)}NWNCore.FunctionHandler.ClosureDelayCommand(OBJECT_SELF, fSeconds, aActionToDelay);\n" +
+        $"{Output_CSharp.GetIndent(3)}NWNCore.FunctionHandler!.ClosureDelayCommand(OBJECT_SELF, fSeconds, aActionToDelay);\n" +
         $"{Output_CSharp.GetIndent(3)}// Function ID 7\n" +
         $"{Output_CSharp.GetIndent(2)}}}"
       },
       {
         "ActionDoCommand",
-        $"{Output_CSharp.GetIndent(2)}public static void ActionDoCommand(ActionDelegate aActionToDo)\n" +
+        $"{Output_CSharp.GetIndent(2)}public static void ActionDoCommand(System.Action aActionToDo)\n" +
         $"{Output_CSharp.GetIndent(2)}{{\n" +
-        $"{Output_CSharp.GetIndent(3)}NWNCore.FunctionHandler.ClosureActionDoCommand(OBJECT_SELF, aActionToDo);\n" +
+        $"{Output_CSharp.GetIndent(3)}NWNCore.FunctionHandler!.ClosureActionDoCommand(OBJECT_SELF, aActionToDo);\n" +
         $"{Output_CSharp.GetIndent(3)}// Function ID 294\n" +
         $"{Output_CSharp.GetIndent(2)}}}"
       }
@@ -40,7 +40,7 @@ namespace NWScript.Output
     private static readonly List<string> customConstants = new List<string>
     {
       "public const uint OBJECT_INVALID = 0x7F000000;",
-      "public static uint OBJECT_SELF => NWNCore.GameManager.ObjectSelf;"
+      "public static uint OBJECT_SELF => NWNCore.FunctionHandler!.ObjectSelf;"
     };
 
     private readonly StringBuilder stringBuilder = new StringBuilder();
@@ -51,13 +51,9 @@ namespace NWScript.Output
       stringBuilder.Clear();
       internalCallId = 0;
 
-      stringBuilder.AppendLine("using System;");
-      stringBuilder.AppendLine("using System.Numerics;");
-      stringBuilder.AppendLine();
-
       stringBuilder.AppendLine("namespace NWN.Core");
       stringBuilder.AppendLine("{");
-      stringBuilder.AppendLine($"{Output_CSharp.GetIndent(1)}public static class NWScript");
+      stringBuilder.AppendLine($"{Output_CSharp.GetIndent(1)}public static partial class NWScript");
       stringBuilder.AppendLine($"{Output_CSharp.GetIndent(1)}{{");
 
       ProcessCustomConstants();
@@ -129,6 +125,8 @@ namespace NWScript.Output
       {
         stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}{constant}");
       }
+
+      stringBuilder.AppendLine();
     }
 
     private void BuildDefine(UnknownPreprocessor unknPreprocessor)
