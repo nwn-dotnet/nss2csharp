@@ -14,7 +14,7 @@ namespace NWScript.Output
         "AssignCommand",
         $"{Output_CSharp.GetIndent(2)}public static void AssignCommand(uint oActionSubject, ActionDelegate aActionToAssign)\n" +
         $"{Output_CSharp.GetIndent(2)}{{\n" +
-        $"{Output_CSharp.GetIndent(3)}NWNCore.GameManager.ClosureAssignCommand(oActionSubject, aActionToAssign);\n" +
+        $"{Output_CSharp.GetIndent(3)}NWNCore.FunctionHandler.ClosureAssignCommand(oActionSubject, aActionToAssign);\n" +
         $"{Output_CSharp.GetIndent(3)}// Function ID 6\n" +
         $"{Output_CSharp.GetIndent(2)}}}"
       },
@@ -22,7 +22,7 @@ namespace NWScript.Output
         "DelayCommand",
         $"{Output_CSharp.GetIndent(2)}public static void DelayCommand(float fSeconds, ActionDelegate aActionToDelay)\n" +
         $"{Output_CSharp.GetIndent(2)}{{\n" +
-        $"{Output_CSharp.GetIndent(3)}NWNCore.GameManager.ClosureDelayCommand(OBJECT_SELF, fSeconds, aActionToDelay);\n" +
+        $"{Output_CSharp.GetIndent(3)}NWNCore.FunctionHandler.ClosureDelayCommand(OBJECT_SELF, fSeconds, aActionToDelay);\n" +
         $"{Output_CSharp.GetIndent(3)}// Function ID 7\n" +
         $"{Output_CSharp.GetIndent(2)}}}"
       },
@@ -30,7 +30,7 @@ namespace NWScript.Output
         "ActionDoCommand",
         $"{Output_CSharp.GetIndent(2)}public static void ActionDoCommand(ActionDelegate aActionToDo)\n" +
         $"{Output_CSharp.GetIndent(2)}{{\n" +
-        $"{Output_CSharp.GetIndent(3)}NWNCore.GameManager.ClosureActionDoCommand(OBJECT_SELF, aActionToDo);\n" +
+        $"{Output_CSharp.GetIndent(3)}NWNCore.FunctionHandler.ClosureActionDoCommand(OBJECT_SELF, aActionToDo);\n" +
         $"{Output_CSharp.GetIndent(3)}// Function ID 294\n" +
         $"{Output_CSharp.GetIndent(2)}}}"
       }
