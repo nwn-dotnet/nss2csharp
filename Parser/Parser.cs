@@ -218,6 +218,9 @@ namespace NWScript.Parser
         case NssKeywords.Cassowary:
           ret = new CassowaryType();
           break;
+        case NssKeywords.Json:
+          ret = new JsonType();
+          break;
         default:
           return null;
       }
