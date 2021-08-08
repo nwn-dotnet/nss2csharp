@@ -41,6 +41,7 @@ namespace NWScript.Language
       {"location", NssKeywords.Location},
       {"vector", NssKeywords.Vector},
       {"itemproperty", NssKeywords.ItemProperty},
+      {"json", NssKeywords.Json},
       {"sqlquery", NssKeywords.SqlQuery},
       {"cassowary", NssKeywords.Cassowary},
       {"effect", NssKeywords.Effect},
@@ -80,6 +81,7 @@ namespace NWScript.Language
     Event,
     SqlQuery,
     Cassowary,
+    Json,
     Default
   }
 }

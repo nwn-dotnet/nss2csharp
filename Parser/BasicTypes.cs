@@ -163,6 +163,17 @@ namespace NWScript.Parser
     public override string NWNXPopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_CASSOWARY)";
   }
 
+  public class JsonType : NSSType
+  {
+    public override string Declaration => "System.IntPtr";
+
+    public override string NativePushFormat => "VM.StackPush({0}, ENGINE_STRUCTURE_JSON)";
+    public override string NWNXPushFormat => "VM.NWNX.StackPush({0}, ENGINE_STRUCTURE_JSON)";
+
+    public override string NativePopFormat => "VM.StackPopStruct(ENGINE_STRUCTURE_JSON)";
+    public override string NWNXPopFormat => "VM.NWNX.StackPopStruct(ENGINE_STRUCTURE_JSON)";
+  }
+
   public class ActionType : NSSType
   {
     public override string Declaration => "System.Action";
