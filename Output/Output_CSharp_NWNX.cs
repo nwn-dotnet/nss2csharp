@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NWScript.Parser;
@@ -308,7 +309,7 @@ namespace NWScript.Output
         }
       }
 
-      return null;
+      throw new InvalidOperationException($"Declared function {decl.Name.Identifier} has no implementation defined.");
     }
   }
 }
