@@ -217,10 +217,16 @@ namespace NWScript.Output
           stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}{declAssignment.m_Type.Declaration} {declAssignment.m_Lvalue.Identifier} = {expression};");
           break;
         case LvalueAssignment assignment:
-          string[] identifier = assignment.m_Lvalue.Identifier.Split('.', 2);
-          if (identifier.Length > 1 && vectorDecls.Contains(identifier[0]))
+          string[] identifier = assignment.m_Lvalue.Identifier.Split('.', 3);
+          if (identifier.Length == 2 && vectorDecls.Contains(identifier[0]))
           {
             identifier[1] = identifier[1].ToUpper();
+          }
+          // If a nested vector is declared in the struct, we need to make the last identifier uppercase.
+          // This is okay for now as nested structs are not supported/valid nss code.
+          else if (identifier.Length == 3)
+          {
+            identifier[2] = identifier[2].ToUpper();
           }
 
           expression = VMTranslations.TryTranslate(pluginNameVar, assignment.m_Expression.m_Expression);
