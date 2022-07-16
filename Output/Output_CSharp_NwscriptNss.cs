@@ -94,7 +94,7 @@ namespace NWScript.Output
 
         if (node is LvalueDeclSingleWithAssignment lvalueDecl)
         {
-          BuildConstant(lvalueDecl);
+          OutputTokens.BuildConstant(stringBuilder, lvalueDecl);
           if (cu.m_Nodes.Count > index + 2 && !(cu.m_Nodes[index + 1] is LvalueDeclSingleWithAssignment))
           {
             stringBuilder.AppendLine();
@@ -160,14 +160,6 @@ namespace NWScript.Output
       }
 
       stringBuilder.AppendLine($"// {ppValue}");
-    }
-
-    private void BuildConstant(LvalueDeclSingleWithAssignment lvalueDecl)
-    {
-      string type = lvalueDecl.m_Type.Declaration;
-      string name = lvalueDecl.m_Lvalue.Identifier;
-      string value = lvalueDecl.m_Expression.m_Expression;
-      stringBuilder.AppendLine($"{Output_CSharp.GetIndent(2)}public const {type} {name} = {value}{(lvalueDecl.m_Type.GetType() == typeof(FloatType) && !value.EndsWith("f") ? "f" : "")};");
     }
 
     private void BuildMethod(FunctionDeclaration funcDecl)
