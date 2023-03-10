@@ -40,7 +40,8 @@ namespace NWScript.Output
     private static readonly List<string> customConstants = new List<string>
     {
       "public const uint OBJECT_INVALID = 0x7F000000;",
-      "public static uint OBJECT_SELF => NWNCore.FunctionHandler!.ObjectSelf;"
+      "public static uint OBJECT_SELF => NWNCore.FunctionHandler!.ObjectSelf;",
+      "public static System.IntPtr LOCATION_INVALID => Location(OBJECT_INVALID, new System.Numerics.Vector3(0f, 0f, 0f), 0f);",
     };
 
     private readonly StringBuilder stringBuilder = new StringBuilder();
@@ -200,6 +201,15 @@ namespace NWScript.Output
       for (int i = funcDecl.Parameters.Count - 1; i >= 0; --i)
       {
         FunctionParameter param = funcDecl.Parameters[i];
+        if (param is FunctionParameterWithDefault def && param.m_Type is LocationType && def.m_Default is Lvalue lv)
+        {
+          stringBuilder.AppendLine(Output_CSharp.GetIndent(3) + $"if ({param.m_Lvalue.Identifier} == default)");
+          stringBuilder.AppendLine(Output_CSharp.GetIndent(3) + "{");
+          stringBuilder.AppendLine(Output_CSharp.GetIndent(4) + $"{param.m_Lvalue.Identifier} = {lv.Identifier};");
+          stringBuilder.AppendLine(Output_CSharp.GetIndent(3) + "}");
+          stringBuilder.AppendLine();
+        }
+
         stringBuilder.AppendLine(Output_CSharp.GetIndent(3) + Output_CSharp.GetStackPush(param.m_Type, param.m_Lvalue, false) + ";");
       }
 

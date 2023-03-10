@@ -62,6 +62,11 @@ namespace NWScript.Output
           return "OBJECT_INVALID";
         }
 
+        if (lv.Identifier == "LOCATION_INVALID")
+        {
+          return "default";
+        }
+
         return GetSafeVariableName(lv.Identifier);
       }
       else if (value is IntLiteral intLit)
