@@ -471,6 +471,18 @@ namespace NWScript.Parser
 
       VectorLiteral ret = new VectorLiteral();
 
+      // Empty vector [] handling.
+      int emptyVectorIndex = baseIndex;
+      err = TraverseNextToken(out token, ref emptyVectorIndex);
+      if (err == 0 && token.GetType() == typeof(SeparatorToken) && ((SeparatorToken)token).m_Separator == NssSeparators.CloseSquareBracket)
+      {
+        baseIndexRef = emptyVectorIndex;
+        ret.m_X = new FloatLiteral();
+        ret.m_Y = new FloatLiteral();
+        ret.m_Z = new FloatLiteral();
+        return ret;
+      }
+
       ret.m_X = ConstructRvalue(ref baseIndex) as FloatLiteral;
       if (ret.m_X == null) return null;
 
