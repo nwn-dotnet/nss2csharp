@@ -868,16 +868,12 @@ namespace NWScript.Parser
       if (((SeparatorToken) token).m_Separator != NssSeparators.Semicolon) return null;
 
       MatchCollection matches = FunctionCallRegex.Matches($"{functionName.Identifier}({args.m_Expression})");
-      FunctionCall ret = new FunctionCall {m_Name = functionName, m_Arguments = matches[0].Groups["param"].Captures.Select(capture =>
+      FunctionCall ret = new FunctionCall
       {
-        // String literal in the argument, don't mess with it.
-        if (capture.Value.Contains("\""))
-        {
-          return capture.Value;
-        }
-
-        return capture.Value.Replace(" ", "");
-      }).ToArray()};
+        m_Name = functionName,
+        m_Arguments = matches[0].Groups["param"].Captures.Select(capture => capture.Value.TrimStart(' ').TrimEnd(' '))
+          .ToArray()
+      };
       baseIndexRef = baseIndex;
       return ret;
     }

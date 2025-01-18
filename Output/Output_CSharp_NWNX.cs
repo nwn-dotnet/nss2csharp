@@ -207,7 +207,6 @@ namespace NWScript.Output
           if (declAssignment.m_Lvalue.Identifier == "sFunc")
           {
             stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}const {declAssignment.m_Type.Declaration} {declAssignment.m_Lvalue.Identifier} = {expression};");
-            stringBuilder.AppendLine($"{Output_CSharp.GetIndent(depth)}VM.NWNX.SetFunction({pluginNameVar}, sFunc);");
             break;
           }
 

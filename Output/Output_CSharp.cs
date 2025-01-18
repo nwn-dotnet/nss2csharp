@@ -107,7 +107,7 @@ namespace NWScript.Output
 
     public static string GetInternalCall(int id)
     {
-      return string.Format("VM.Call({0})", id);
+      return $"global::NWNX.NET.NWNXAPI.CallBuiltIn({id})";
     }
 
     public static string GetSafeVariableName(string variable)
