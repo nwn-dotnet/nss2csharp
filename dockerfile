@@ -3,7 +3,7 @@ ADD . /Build
 WORKDIR /Build
 RUN dotnet publish -c Release -o /publish
 
-FROM mcr.microsoft.com/dotnet/runtime
+FROM mcr.microsoft.com/dotnet/runtime:8.0
 RUN apt update && apt install wget curl git jq -y && apt clean && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /publish .
